@@ -11,7 +11,7 @@ func resourceMarathonApp() *schema.Resource {
 	return &schema.Resource{
 		Create: resourceMarathonAppCreate,
 		Read:   resourceMarathonAppRead,
-		Update: resourceMarathonAppUpdate,
+		//		Update: resourceMarathonAppUpdate,
 		Delete: resourceMarathonAppDelete,
 
 		Schema: map[string]*schema.Schema{
@@ -63,11 +63,14 @@ func resourceMarathonApp() *schema.Resource {
 func resourceMarathonAppCreate(d *schema.ResourceData, meta interface{}) error {
 	c := meta.(*marathon.Client)
 
+	// terraform doesn't have a float type yet
 	cpus, _ := strconv.ParseFloat(d.Get("cpus").(string), 64)
+	mem, _ := strconv.ParseFloat(d.Get("mem").(string), 64)
 
 	appMutable := marathon.AppMutable{
 		Id:   d.Get("name").(string),
 		Cpus: cpus,
+		Mem:  mem,
 		Container: &marathon.Container{
 			Docker: &marathon.Docker{
 				Image: d.Get("container.0.docker.0.image").(string),
@@ -88,12 +91,27 @@ func resourceMarathonAppCreate(d *schema.ResourceData, meta interface{}) error {
 }
 
 func resourceMarathonAppRead(d *schema.ResourceData, meta interface{}) error {
+	c := meta.(*marathon.Client)
+
+	// client should throw error if id is nil
+	app, err := c.AppRead(d.Id())
+
+	if app.Id == "" {
+		d.SetId("")
+	}
+
+	// Add in computed values from App struct here.
+
 	return nil
 }
+
+/*
+// test mutating existing state of AppMutable fields
 
 func resourceMarathonAppUpdate(d *schema.ResourceData, meta interface{}) error {
 	return resourceMarathonAppCreate(d, meta)
 }
+*/
 
 func resourceMarathonAppDelete(d *schema.ResourceData, meta interface{}) error {
 	c := meta.(*marathon.Client)
