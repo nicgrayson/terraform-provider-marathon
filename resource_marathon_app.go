@@ -15,20 +15,63 @@ func resourceMarathonApp() *schema.Resource {
 		Delete: resourceMarathonAppDelete,
 
 		Schema: map[string]*schema.Schema{
-			"name": &schema.Schema{
+			"name": &schema.Schema{ // represents 'id' field
 				Type:     schema.TypeString,
 				Optional: true,
 				ForceNew: false,
 			},
-			"cpus": &schema.Schema{
-				Type:     schema.TypeString,
+			"args": &schema.Schema{
+				Type:     schema.TypeList,
+				Optional: true,
+				ForceNew: false,
+				Elem: &schema.Schema{
+					Type: schema.TypeString,
+				},
+			},
+			"backoff_seconds": &schema.Schema{
+				Type:     schema.TypeString, //should be float -_-
 				Optional: true,
 				ForceNew: false,
 			},
-			"mem": &schema.Schema{
-				Type:     schema.TypeString,
+			"backoff_factor": &schema.Schema{
+				Type:     schema.TypeString, //should be float -_-
 				Optional: true,
 				ForceNew: false,
+			},
+			"cmd": &schema.Schema{
+				Type:     schema.TypeString, //should be float -_-
+				Optional: true,
+				ForceNew: false,
+			},
+			"constraints": &schema.Schema{
+				Type:     schema.TypeList,
+				Optional: true,
+				ForceNew: false,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"constraint": &schema.Schema{
+							Type:     schema.TypeList,
+							Optional: true,
+							ForceNew: false,
+							Elem: &schema.Resource{
+								Schema: map[string]*schema.Schema{
+									"attribute": &schema.Schema{
+										Type:     schema.TypeString,
+										Optional: true,
+									},
+									"operation": &schema.Schema{
+										Type:     schema.TypeString,
+										Optional: true,
+									},
+									"parameter": &schema.Schema{
+										Type:     schema.TypeString,
+										Optional: true,
+									},
+								},
+							},
+						},
+					},
+				},
 			},
 			"container": &schema.Schema{
 				Type:     schema.TypeList,
@@ -45,16 +88,199 @@ func resourceMarathonApp() *schema.Resource {
 										Type:     schema.TypeString,
 										Required: true,
 									},
+									"network": &schema.Schema{
+										Type:     schema.TypeString,
+										Required: true,
+									},
+									"port_mappings": &schema.Schema{
+										Type:     schema.TypeList,
+										Optional: true,
+										ForceNew: false,
+										Elem: &schema.Resource{
+											Schema: map[string]*schema.Schema{
+												"port_mapping": &schema.Schema{
+													Type:     schema.TypeList,
+													Optional: true,
+													ForceNew: false,
+													Elem: &schema.Resource{
+														Schema: map[string]*schema.Schema{
+															"container_port": &schema.Schema{
+																Type:     schema.TypeInt,
+																Optional: true,
+															},
+															"host_port": &schema.Schema{
+																Type:     schema.TypeInt,
+																Optional: true,
+															},
+															"service_port": &schema.Schema{
+																Type:     schema.TypeInt,
+																Optional: true,
+															},
+															"protocol": &schema.Schema{
+																Type:     schema.TypeString,
+																Optional: true,
+															},
+														},
+													},
+												},
+											},
+										},
+									},
 								},
 							},
 						},
-
+						"volumes": &schema.Schema{
+							Type:     schema.TypeList,
+							Optional: true,
+							ForceNew: false,
+							Elem: &schema.Resource{
+								Schema: map[string]*schema.Schema{
+									"volume": &schema.Schema{
+										Type:     schema.TypeList,
+										Optional: true,
+										ForceNew: false,
+										Elem: &schema.Resource{
+											Schema: map[string]*schema.Schema{
+												"container_path": &schema.Schema{
+													Type:     schema.TypeString,
+													Optional: true,
+												},
+												"host_path": &schema.Schema{
+													Type:     schema.TypeString,
+													Optional: true,
+												},
+												"mode": &schema.Schema{
+													Type:     schema.TypeString,
+													Optional: true,
+												},
+											},
+										},
+									},
+								},
+							},
+						},
 						"type": &schema.Schema{
 							Type:     schema.TypeString,
 							Optional: true,
 						},
 					},
 				},
+			},
+			"cpus": &schema.Schema{
+				Type:     schema.TypeString, //should be float -_-
+				Optional: true,
+				ForceNew: false,
+			},
+			"dependencies": &schema.Schema{
+				Type:     schema.TypeList,
+				Optional: true,
+				ForceNew: false,
+				Elem: &schema.Schema{
+					Type: schema.TypeString,
+				},
+			},
+			"disk": &schema.Schema{
+				Type:     schema.TypeString, //should be float -_-
+				Optional: true,
+				ForceNew: false,
+			},
+			"env": &schema.Schema{
+				Type:     schema.TypeMap,
+				Optional: true,
+			},
+			"health_checks": &schema.Schema{
+				Type:     schema.TypeList,
+				Optional: true,
+				ForceNew: false,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"health_check": &schema.Schema{
+							Type:     schema.TypeList,
+							Optional: true,
+							ForceNew: false,
+							Elem: &schema.Resource{
+								Schema: map[string]*schema.Schema{
+									"protocol": &schema.Schema{
+										Type:     schema.TypeString,
+										Optional: true,
+									},
+									"path": &schema.Schema{
+										Type:     schema.TypeString,
+										Optional: true,
+									},
+									"grace_period_seconds": &schema.Schema{
+										Type:     schema.TypeInt,
+										Optional: true,
+									},
+									"interval_seconds": &schema.Schema{
+										Type:     schema.TypeInt,
+										Optional: true,
+									},
+									"port_index": &schema.Schema{
+										Type:     schema.TypeInt,
+										Optional: true,
+									},
+									"timeout_seconds": &schema.Schema{
+										Type:     schema.TypeInt,
+										Optional: true,
+									},
+									"max_consecutive_failures": &schema.Schema{
+										Type:     schema.TypeInt,
+										Optional: true,
+									},
+									"command": &schema.Schema{
+										Type:     schema.TypeMap,
+										Optional: true,
+									},
+									// incomplete computed values here
+								},
+							},
+						},
+					},
+				},
+			},
+			"instances": &schema.Schema{
+				Type:     schema.TypeInt,
+				Optional: true,
+				ForceNew: false,
+			},
+			"mem": &schema.Schema{
+				Type:     schema.TypeString, //should be float -_-
+				Optional: true,
+				ForceNew: false,
+			},
+			"ports": &schema.Schema{
+				Type:     schema.TypeList,
+				Optional: true,
+				ForceNew: false,
+				Elem: &schema.Schema{
+					Type: schema.TypeInt,
+				},
+			},
+			"upgrade_strategy": &schema.Schema{
+				Type:     schema.TypeMap,
+				Optional: true,
+				ForceNew: false,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"minimum_health_capacity": &schema.Schema{
+							Type:     schema.TypeString,
+							Optional: true,
+						},
+					},
+				},
+			},
+			"uris": &schema.Schema{
+				Type:     schema.TypeList,
+				Optional: true,
+				ForceNew: false,
+				Elem: &schema.Schema{
+					Type: schema.TypeString,
+				},
+			},
+			"version": &schema.Schema{
+				Type:     schema.TypeString,
+				Computed: true,
 			},
 		},
 	}
@@ -63,20 +289,119 @@ func resourceMarathonApp() *schema.Resource {
 func resourceMarathonAppCreate(d *schema.ResourceData, meta interface{}) error {
 	c := meta.(*marathon.Client)
 
-	// terraform doesn't have a float type yet
-	cpus, _ := strconv.ParseFloat(d.Get("cpus").(string), 64)
-	mem, _ := strconv.ParseFloat(d.Get("mem").(string), 64)
+	appMutable := marathon.AppMutable{}
 
-	appMutable := marathon.AppMutable{
-		Id:   d.Get("name").(string),
-		Cpus: cpus,
-		Mem:  mem,
-		Container: &marathon.Container{
-			Docker: &marathon.Docker{
-				Image: d.Get("container.0.docker.0.image").(string),
-			},
-			Type: d.Get("container.0.type").(string),
+	if v, ok := d.GetOk("name"); ok {
+		appMutable.Id = v.(string)
+	}
+
+	if v, ok := d.GetOk("args.#"); ok {
+		args := make([]string, v.(int))
+
+		for i, _ := range args {
+			args[i] = d.Get("args." + strconv.Itoa(i)).(string)
+		}
+
+		if len(args) != 0 {
+			appMutable.Args = args
+		}
+	}
+
+	if v, ok := d.GetOk("backoff_seconds"); ok {
+		backoffSeconds, _ := strconv.ParseFloat(v.(string), 64)
+		appMutable.BackoffSeconds = backoffSeconds
+	}
+
+	if v, ok := d.GetOk("backoff_factor"); ok {
+		backoffFactor, _ := strconv.ParseFloat(v.(string), 64)
+		appMutable.BackoffFactor = backoffFactor
+	}
+
+	if v, ok := d.GetOk("cmd"); ok {
+		appMutable.Cmd = v.(string)
+	}
+
+	if v, ok := d.GetOk("constraints.#"); ok {
+		constraints := make([][]string, v.(int))
+
+		for i := 0; i < v.(int); i++ {
+			if c, ok := d.GetOk("constraints." + strconv.Itoa(i) + ".#"); ok {
+				constraints[i] = make([]string, c.(int))
+				for j := 0; j < c.(int); j++ {
+					constraints[i][j] = d.Get("constraints." + strconv.Itoa(i) + "." + strconv.Itoa(j)).(string)
+				}
+				appMutable.Constraints = constraints
+			}
+		}
+	}
+
+	// Container structure -- certainly not complete.
+	appMutable.Container = &marathon.Container{
+		Docker: &marathon.Docker{
+			Image: d.Get("container.0.docker.0.image").(string),
 		},
+		Type: d.Get("container.0.type").(string),
+	}
+
+	if v, ok := d.GetOk("cpus"); ok {
+		cpus, _ := strconv.ParseFloat(v.(string), 64)
+		appMutable.Cpus = cpus
+	}
+
+	if v, ok := d.GetOk("dependencies.#"); ok {
+		dependencies := make([]string, v.(int))
+
+		for i, _ := range dependencies {
+			dependencies[i] = d.Get("dependencies." + strconv.Itoa(i)).(string)
+		}
+
+		if len(dependencies) != 0 {
+			appMutable.Dependencies = dependencies
+		}
+	}
+
+	if v, ok := d.GetOk("disk"); ok {
+		disk, _ := strconv.ParseFloat(v.(string), 64)
+		appMutable.Disk = disk
+	}
+
+	//		Env:       d.Get("env").(map[string]string),
+	if v, ok := d.GetOk("environment"); ok {
+		envMap := v.(map[string]string)
+		log.Printf("%v\n", envMap)
+	}
+
+	if v, ok := d.GetOk("instances"); ok {
+		appMutable.Instances = v.(int)
+	}
+
+	if v, ok := d.GetOk("mem"); ok {
+		mem, _ := strconv.ParseFloat(v.(string), 64)
+		appMutable.Mem = mem
+	}
+
+	if v, ok := d.GetOk("ports.#"); ok {
+		ports := make([]int, v.(int))
+
+		for i, _ := range ports {
+			ports[i] = d.Get("ports." + strconv.Itoa(i)).(int)
+		}
+
+		if len(ports) != 0 {
+			appMutable.Ports = ports
+		}
+	}
+
+	if v, ok := d.GetOk("uris.#"); ok {
+		uris := make([]string, v.(int))
+
+		for i, _ := range uris {
+			uris[i] = d.Get("uris." + strconv.Itoa(i)).(string)
+		}
+
+		if len(uris) != 0 {
+			appMutable.Uris = uris
+		}
 	}
 
 	app, err := c.AppCreate(appMutable)
@@ -86,6 +411,7 @@ func resourceMarathonAppCreate(d *schema.ResourceData, meta interface{}) error {
 	}
 
 	d.SetId(app.Id)
+	d.Set("version", app.Version)
 
 	return resourceMarathonAppRead(d, meta)
 }
@@ -94,7 +420,7 @@ func resourceMarathonAppRead(d *schema.ResourceData, meta interface{}) error {
 	c := meta.(*marathon.Client)
 
 	// client should throw error if id is nil
-	app, err := c.AppRead(d.Id())
+	app, _ := c.AppRead(d.Id())
 
 	if app.Id == "" {
 		d.SetId("")
