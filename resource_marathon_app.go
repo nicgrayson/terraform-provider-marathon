@@ -3,6 +3,7 @@ package marathon
 import (
 	"github.com/Banno/go-marathon"
 	"github.com/hashicorp/terraform/helper/schema"
+
 	"log"
 	"strconv"
 )
@@ -90,7 +91,7 @@ func resourceMarathonApp() *schema.Resource {
 									},
 									"network": &schema.Schema{
 										Type:     schema.TypeString,
-										Required: true,
+										Optional: true,
 									},
 									"port_mappings": &schema.Schema{
 										Type:     schema.TypeList,
@@ -287,6 +288,8 @@ func resourceMarathonApp() *schema.Resource {
 }
 
 func resourceMarathonAppCreate(d *schema.ResourceData, meta interface{}) error {
+	log.Println("[INFO] >>>>>>>>>>>>>>>>>> ENTERING AppCreate")
+
 	c := meta.(*marathon.Client)
 
 	appMutable := marathon.AppMutable{}
@@ -328,8 +331,9 @@ func resourceMarathonAppCreate(d *schema.ResourceData, meta interface{}) error {
 			if c, ok := d.GetOk("constraints." + strconv.Itoa(i) + ".#"); ok {
 				constraints[i] = make([]string, c.(int))
 				for j := 0; j < c.(int); j++ {
-					constraints[i][j] = d.Get("constraints." + strconv.Itoa(i) + "." + strconv.Itoa(j)).(string)
+					constraints[i][j] = d.Get("constraints." + strconv.Itoa(i) + "constraint." + strconv.Itoa(j)).(string)
 				}
+
 				appMutable.Constraints = constraints
 			}
 		}
@@ -366,9 +370,71 @@ func resourceMarathonAppCreate(d *schema.ResourceData, meta interface{}) error {
 	}
 
 	//		Env:       d.Get("env").(map[string]string),
-	if v, ok := d.GetOk("environment"); ok {
-		envMap := v.(map[string]string)
-		log.Printf("%v\n", envMap)
+	// fmt.Printf("[DEBUG] ANYTHING")
+
+	/*	if v, ok := d.GetOk("env"); ok {
+			for k, v := range v.(map[string]interface{}) {
+				val := v.(string)
+
+				// fmt.Println("TEST TEST TEST TEST TEST", k, val)
+			}
+
+		}
+	*/
+
+	// health checks!!
+	/*
+		if _, ok := d.GetOk("health_checks.0.health_check.#"); ok {
+			//countStr := strconv.Atoi(v.(int))
+			v := d.Get("health_checks.0.health_check.0")
+			healthMap := v.(map[string]interface{})
+
+			h := &marathon.HealthCheck{}
+			// built up the types and test that they post properly
+		}
+	*/
+	if v, ok := d.GetOk("health_checks.0.health_check.#"); ok {
+		healthChecks := make([]marathon.HealthCheck, v.(int))
+
+		for i, _ := range healthChecks {
+			healthCheck := marathon.HealthCheck{}
+			mapStruct := d.Get("health_checks.0.health_check." + strconv.Itoa(i)).(map[string]interface{})
+
+			if prop, ok := mapStruct["grace_period_seconds"]; ok {
+				healthCheck.GracePeriodSeconds = prop.(int)
+			}
+
+			if prop, ok := mapStruct["interval_seconds"]; ok {
+				healthCheck.IntervalSeconds = prop.(int)
+			}
+
+			if prop, ok := mapStruct["max_consecutive_failures"]; ok {
+				healthCheck.MaxConsecutiveFailures = prop.(int)
+			}
+
+			if prop, ok := mapStruct["path"]; ok {
+				healthCheck.Path = prop.(string)
+			}
+
+			if prop, ok := mapStruct["port_index"]; ok {
+				healthCheck.PortIndex = prop.(int)
+			}
+
+			if prop, ok := mapStruct["protocol"]; ok {
+				healthCheck.Protocol = prop.(string)
+			}
+
+			if prop, ok := mapStruct["timeout_seconds"]; ok {
+				healthCheck.TimeoutSeconds = prop.(int)
+			}
+
+			// config
+
+			log.Printf("=====\n%#v\n", healthCheck)
+			healthChecks[i] = healthCheck
+		}
+
+		appMutable.HealthChecks = healthChecks
 	}
 
 	if v, ok := d.GetOk("instances"); ok {
@@ -392,6 +458,16 @@ func resourceMarathonAppCreate(d *schema.ResourceData, meta interface{}) error {
 		}
 	}
 
+	if v, ok := d.GetOk("upgrade_strategy.minimum_health_capacity"); ok {
+		capacity, _ := strconv.ParseFloat(v.(string), 64)
+
+		upgradeStrategy := &marathon.UpgradeStrategy{
+			MinimumHealthCapacity: capacity,
+		}
+		appMutable.UpgradeStrategy = upgradeStrategy
+
+	}
+
 	if v, ok := d.GetOk("uris.#"); ok {
 		uris := make([]string, v.(int))
 
@@ -403,6 +479,8 @@ func resourceMarathonAppCreate(d *schema.ResourceData, meta interface{}) error {
 			appMutable.Uris = uris
 		}
 	}
+
+	log.Printf("=====\n%#v\n", appMutable)
 
 	app, err := c.AppCreate(appMutable)
 	if err != nil {
@@ -421,6 +499,8 @@ func resourceMarathonAppRead(d *schema.ResourceData, meta interface{}) error {
 
 	// client should throw error if id is nil
 	app, _ := c.AppRead(d.Id())
+
+	log.Printf("== READ ==\n%#v\n", app)
 
 	if app.Id == "" {
 		d.SetId("")
