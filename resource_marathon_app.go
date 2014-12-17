@@ -369,30 +369,17 @@ func resourceMarathonAppCreate(d *schema.ResourceData, meta interface{}) error {
 		appMutable.Disk = disk
 	}
 
-	//		Env:       d.Get("env").(map[string]string),
-	// fmt.Printf("[DEBUG] ANYTHING")
+	if v, ok := d.GetOk("env"); ok {
+		envMap := v.(map[string]interface{})
+		env := make(map[string]string, len(envMap))
 
-	/*	if v, ok := d.GetOk("env"); ok {
-			for k, v := range v.(map[string]interface{}) {
-				val := v.(string)
-
-				// fmt.Println("TEST TEST TEST TEST TEST", k, val)
-			}
-
+		for k, v := range envMap {
+			env[k] = v.(string)
 		}
-	*/
 
-	// health checks!!
-	/*
-		if _, ok := d.GetOk("health_checks.0.health_check.#"); ok {
-			//countStr := strconv.Atoi(v.(int))
-			v := d.Get("health_checks.0.health_check.0")
-			healthMap := v.(map[string]interface{})
+		appMutable.Env = env
+	}
 
-			h := &marathon.HealthCheck{}
-			// built up the types and test that they post properly
-		}
-	*/
 	if v, ok := d.GetOk("health_checks.0.health_check.#"); ok {
 		healthChecks := make([]marathon.HealthCheck, v.(int))
 
