@@ -390,6 +390,30 @@ func resourceMarathonAppCreate(d *schema.ResourceData, meta interface{}) error {
 			container.Docker = docker
 
 		}
+
+		if v, ok := d.GetOk("container.0.volumes.0.volume.#"); ok {
+			volumes := make([]marathon.Volume, v.(int))
+
+			for i, _ := range volumes {
+				volumes[i] = marathon.Volume{}
+
+				volumeMap := d.Get(fmt.Sprintf("container.0.volumes.0.volume.%d", i)).(map[string]interface{})
+
+				if val, ok := volumeMap["container_path"]; ok {
+					volumes[i].ContainerPath = val.(string)
+				}
+				if val, ok := volumeMap["host_path"]; ok {
+					volumes[i].HostPath = val.(string)
+				}
+				if val, ok := volumeMap["mode"]; ok {
+					volumes[i].Mode = val.(string)
+				}
+			}
+			container.Volumes = volumes
+		}
+
+		//		log.Printf("===== CONTAINER OBJECT ====\n%#v\n", container)
+
 		appMutable.Container = container
 	}
 

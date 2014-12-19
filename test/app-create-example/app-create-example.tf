@@ -44,13 +44,22 @@ resource "marathon_app" "app-create-example" {
 				}
 			}
 		}
-		// finish this
-//		volumes {
-//
-//		}
+
+		volumes {
+			volume {
+				container_path = "/etc/a"
+				host_path = "/var/data/a"
+				mode = "RO"
+			}
+			volume {
+				container_path = "/etc/b"
+				host_path = "/var/data/b"
+				mode = "RW"
+			}
+		}
 	}
 
-	cpus = "0.25"
+	cpus = "0.01"
 
 	dependencies = ["/test"]
 
