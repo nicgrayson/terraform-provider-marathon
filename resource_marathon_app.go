@@ -346,12 +346,51 @@ func resourceMarathonAppCreate(d *schema.ResourceData, meta interface{}) error {
 		appMutable.Constraints = constraints
 	}
 
-	// Container structure -- certainly not complete.
-	appMutable.Container = &marathon.Container{
-		Docker: &marathon.Docker{
-			Image: d.Get("container.0.docker.0.image").(string),
-		},
-		Type: d.Get("container.0.type").(string),
+	if v, ok := d.GetOk("container.0.type"); ok {
+		container := &marathon.Container{}
+		t := v.(string)
+
+		container.Type = t
+
+		if t == "DOCKER" {
+			docker := &marathon.Docker{}
+
+			if v, ok := d.GetOk("container.0.docker.0.image"); ok {
+				docker.Image = v.(string)
+			}
+
+			if v, ok := d.GetOk("container.0.docker.0.network"); ok {
+				docker.Network = v.(string)
+			}
+
+			if v, ok := d.GetOk("container.0.docker.0.port_mappings.0.port_mapping.#"); ok {
+				portMappings := make([]marathon.PortMapping, v.(int))
+
+				for i, _ := range portMappings {
+					portMappings[i] = marathon.PortMapping{}
+
+					pmMap := d.Get(fmt.Sprintf("container.0.docker.0.port_mappings.0.port_mapping.%d", i)).(map[string]interface{})
+
+					if val, ok := pmMap["container_port"]; ok {
+						portMappings[i].ContainerPort = val.(int)
+					}
+					if val, ok := pmMap["host_port"]; ok {
+						portMappings[i].HostPort = val.(int)
+					}
+					if val, ok := pmMap["protocol"]; ok {
+						portMappings[i].Protocol = val.(string)
+					}
+					if val, ok := pmMap["service_port"]; ok {
+						portMappings[i].ServicePort = val.(int)
+					}
+
+				}
+				docker.PortMappings = portMappings
+			}
+			container.Docker = docker
+
+		}
+		appMutable.Container = container
 	}
 
 	if v, ok := d.GetOk("cpus"); ok {

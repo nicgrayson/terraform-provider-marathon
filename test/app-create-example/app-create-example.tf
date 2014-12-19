@@ -25,12 +25,29 @@ resource "marathon_app" "app-create-example" {
 	}
 
 	container {
-		docker {
-			image = "python:3"
-			// finish this stuff
-		}
 		// finish this
 		type = "DOCKER"
+		docker {
+			image = "python:3"
+			network = "BRIDGE"
+			port_mappings {
+				port_mapping {
+					container_port = 8080
+					host_port = 0
+					service_port = 9000
+					protocol = "tcp"
+				}
+				port_mapping {
+					container_port = 161
+					host_port = 0
+					protocol = "udp"
+				}
+			}
+		}
+		// finish this
+//		volumes {
+//
+//		}
 	}
 
 	cpus = "0.25"
