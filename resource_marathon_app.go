@@ -394,6 +394,13 @@ func resourceMarathonAppCreate(d *schema.ResourceData, meta interface{}) error {
 			healthCheck := marathon.HealthCheck{}
 			mapStruct := d.Get("health_checks.0.health_check." + strconv.Itoa(i)).(map[string]interface{})
 
+			if prop, ok := d.GetOk("health_checks.0.health_check." + strconv.Itoa(i) + ".command.value"); ok {
+				command := make(map[string]string)
+				command["value"] = prop.(string)
+
+				healthCheck.Command = command
+			}
+
 			if prop, ok := mapStruct["grace_period_seconds"]; ok {
 				healthCheck.GracePeriodSeconds = prop.(int)
 			}
@@ -422,9 +429,6 @@ func resourceMarathonAppCreate(d *schema.ResourceData, meta interface{}) error {
 				healthCheck.TimeoutSeconds = prop.(int)
 			}
 
-			// config
-
-			log.Printf("=====\n%#v\n", healthCheck)
 			healthChecks[i] = healthCheck
 		}
 
@@ -484,6 +488,8 @@ func resourceMarathonAppCreate(d *schema.ResourceData, meta interface{}) error {
 
 	d.SetId(app.Id)
 	d.Set("version", app.Version)
+
+	// inspect the returned APP stuff
 
 	return resourceMarathonAppRead(d, meta)
 }
