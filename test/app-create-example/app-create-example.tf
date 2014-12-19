@@ -17,6 +17,11 @@ resource "marathon_app" "app-create-example" {
 			attribute = "hostname"
 			operation = "UNIQUE"
 		}
+		constraint {
+			attribute = "hostname"
+			operation = "UNIQUE"
+			parameter = "test"
+		}
 	}
 
 	container {

@@ -4,6 +4,7 @@ import (
 	"github.com/Banno/go-marathon"
 	"github.com/hashicorp/terraform/helper/schema"
 
+	"fmt"
 	"log"
 	"strconv"
 )
@@ -324,19 +325,25 @@ func resourceMarathonAppCreate(d *schema.ResourceData, meta interface{}) error {
 		appMutable.Cmd = v.(string)
 	}
 
-	if v, ok := d.GetOk("constraints.#"); ok {
+	if v, ok := d.GetOk("constraints.0.constraint.#"); ok {
 		constraints := make([][]string, v.(int))
 
-		for i := 0; i < v.(int); i++ {
-			if c, ok := d.GetOk("constraints." + strconv.Itoa(i) + ".#"); ok {
-				constraints[i] = make([]string, c.(int))
-				for j := 0; j < c.(int); j++ {
-					constraints[i][j] = d.Get("constraints." + strconv.Itoa(i) + "constraint." + strconv.Itoa(j)).(string)
-				}
+		for i, _ := range constraints {
+			cMap := d.Get(fmt.Sprintf("constraints.0.constraint.%d", i)).(map[string]interface{})
 
-				appMutable.Constraints = constraints
+			if cMap["parameter"] == "" {
+				constraints[i] = make([]string, 2)
+				constraints[i][0] = cMap["attribute"].(string)
+				constraints[i][1] = cMap["operation"].(string)
+			} else {
+				constraints[i] = make([]string, 3)
+				constraints[i][0] = cMap["attribute"].(string)
+				constraints[i][1] = cMap["operation"].(string)
+				constraints[i][2] = cMap["parameter"].(string)
 			}
 		}
+
+		appMutable.Constraints = constraints
 	}
 
 	// Container structure -- certainly not complete.
