@@ -2,8 +2,8 @@ package marathon
 
 import (
 	"fmt"
-	"log"
-	//	"time"
+	//"log"
+	"time"
 
 	"github.com/Banno/go-marathon"
 	"github.com/hashicorp/terraform/helper/resource"
@@ -14,7 +14,7 @@ import (
 
 const testAccCheckMarathonAppConfig_basic = `
 resource "marathon_app" "app-create-example" {
-	name = "app-create-example"
+	name = "/app-create-example"
 
 	cmd = "env && python3 -m http.server $PORT0"
 	
@@ -32,14 +32,47 @@ resource "marathon_app" "app-create-example" {
 }
 `
 
+const testAccCheckMarathonAppConfig_update = `
+resource "marathon_app" "app-create-example" {
+	name = "/app-create-example"
+
+	cmd = "env && python3 -m http.server $PORT0"
+	
+	container {
+		type = "DOCKER"
+		docker {
+			image = "python:3"
+                }
+	}
+
+	cpus = "0.01"
+	instances = 2
+	mem = 100
+
+}
+`
+
 func TestAccMarathonApp_basic(t *testing.T) {
 
 	var a marathon.App
 
-	testCheck := func(app *marathon.App) resource.TestCheckFunc {
+	testCheckCreate := func(app *marathon.App) resource.TestCheckFunc {
 		return func(s *terraform.State) error {
 			if a.Version == "" {
 				return fmt.Errorf("Didn't return a version so something is broken: %#v", app)
+			}
+			if a.Instances != 1 {
+				return fmt.Errorf("Wrong number of instances %#v", app)
+			}
+			return nil
+		}
+	}
+
+	testCheckUpdate := func(app *marathon.App) resource.TestCheckFunc {
+		return func(s *terraform.State) error {
+			if a.Instances != 2 {
+				return fmt.Errorf("Wrong number of instances %#v", app)
+
 			}
 			return nil
 		}
@@ -53,15 +86,22 @@ func TestAccMarathonApp_basic(t *testing.T) {
 			resource.TestStep{
 				Config: testAccCheckMarathonAppConfig_basic,
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheckContainerExists("marathon_app.app-create-example", &a),
-					testCheck(&a),
+					testAccReadApp("marathon_app.app-create-example", &a),
+					testCheckCreate(&a),
+				),
+			},
+			resource.TestStep{
+				Config: testAccCheckMarathonAppConfig_update,
+				Check: resource.ComposeTestCheckFunc(
+					testAccReadApp("marathon_app.app-create-example", &a),
+					testCheckUpdate(&a),
 				),
 			},
 		},
 	})
 }
 
-func testAccCheckContainerExists(name string, app *marathon.App) resource.TestCheckFunc {
+func testAccReadApp(name string, app *marathon.App) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
 		rs, ok := s.RootModule().Resources[name]
 		if !ok {
@@ -71,15 +111,15 @@ func testAccCheckContainerExists(name string, app *marathon.App) resource.TestCh
 			return fmt.Errorf("marathon_app resource id not set correctly: %s", name)
 		}
 
-		log.Printf("=== testAccContainerExists: rs ===\n%#v\n", rs)
+		//log.Printf("=== testAccContainerExists: rs ===\n%#v\n", rs)
 
 		client := testAccProvider.Meta().(*marathon.Client)
 
 		appRead, _ := client.AppRead(rs.Primary.Attributes["name"])
 
-		log.Printf("=== testAccContainerExists: appRead ===\n%#v\n", appRead)
+		//		log.Printf("=== testAccContainerExists: appRead ===\n%#v\n", appRead)
 
-		//time.Sleep(5000 * time.Millisecond)
+		time.Sleep(5000 * time.Millisecond)
 
 		*app = *appRead
 

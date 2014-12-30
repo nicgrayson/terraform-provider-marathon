@@ -1,19 +1,20 @@
 package marathon
 
 import (
-	"github.com/Banno/go-marathon"
-	"github.com/hashicorp/terraform/helper/schema"
-
 	"fmt"
+	"github.com/Banno/go-marathon"
+	"github.com/hashicorp/terraform/helper/resource"
+	"github.com/hashicorp/terraform/helper/schema"
 	"log"
 	"strconv"
+	"time"
 )
 
 func resourceMarathonApp() *schema.Resource {
 	return &schema.Resource{
 		Create: resourceMarathonAppCreate,
 		Read:   resourceMarathonAppRead,
-		//		Update: resourceMarathonAppUpdate,
+		Update: resourceMarathonAppUpdate,
 		Delete: resourceMarathonAppDelete,
 
 		Schema: map[string]*schema.Schema{
@@ -284,14 +285,93 @@ func resourceMarathonApp() *schema.Resource {
 				Type:     schema.TypeString,
 				Computed: true,
 			},
+			// many other "computed" values haven't been added.
 		},
 	}
 }
 
 func resourceMarathonAppCreate(d *schema.ResourceData, meta interface{}) error {
-	log.Println("[INFO] >>>>>>>>>>>>>>>>>> ENTERING AppCreate")
-
 	c := meta.(*marathon.Client)
+
+	appMutable := mutateResourceToAppMutable(d)
+
+	app, err := c.AppCreate(appMutable)
+	if err != nil {
+		log.Println(err)
+		return err
+	}
+
+	d.SetId(app.Id)
+
+	// inspect the returned App stuff and set more computed values
+
+	return resourceMarathonAppRead(d, meta)
+}
+
+func resourceMarathonAppRead(d *schema.ResourceData, meta interface{}) error {
+	c := meta.(*marathon.Client)
+
+	// client should throw error if id is nil
+	app, _ := c.AppRead(d.Id())
+
+	if app.Id == "" {
+		d.SetId("")
+	}
+
+	// Add in computed values from App struct here.
+	d.Set("version", app.Version)
+
+	return nil
+}
+
+func resourceMarathonAppUpdate(d *schema.ResourceData, meta interface{}) error {
+	c := meta.(*marathon.Client)
+
+	appMutable := mutateResourceToAppMutable(d)
+
+	// Spin until it's not locked by a deployment or things time out.
+	stateConf := &resource.StateChangeConf{
+		Pending:    []string{""},
+		Target:     "updated",
+		Refresh:    updateAppFunc(c, &appMutable),
+		Timeout:    10 * time.Minute,
+		Delay:      1 * time.Second,
+		MinTimeout: 1 * time.Second,
+	}
+
+	_, err := stateConf.WaitForState()
+	if err != nil {
+		return fmt.Errorf("Timed out, or something: %#v", err)
+	}
+
+	time.Sleep(5 * time.Second)
+
+	return resourceMarathonAppRead(d, meta)
+}
+
+func resourceMarathonAppDelete(d *schema.ResourceData, meta interface{}) error {
+	c := meta.(*marathon.Client)
+
+	if err := c.AppDelete(d.Id()); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func updateAppFunc(c *marathon.Client, appMutable *marathon.AppMutable) resource.StateRefreshFunc {
+	return func() (interface{}, string, error) {
+		appUpdateResponse, err := c.AppUpdate(*appMutable, false)
+		if err != nil {
+			log.Printf("Update Error: %#v\n", err)
+			return nil, "", err
+		}
+
+		return appUpdateResponse, "updated", nil
+	}
+}
+
+func mutateResourceToAppMutable(d *schema.ResourceData) marathon.AppMutable {
 
 	appMutable := marathon.AppMutable{}
 
@@ -411,8 +491,6 @@ func resourceMarathonAppCreate(d *schema.ResourceData, meta interface{}) error {
 			}
 			container.Volumes = volumes
 		}
-
-		//		log.Printf("===== CONTAINER OBJECT ====\n%#v\n", container)
 
 		appMutable.Container = container
 	}
@@ -541,53 +619,5 @@ func resourceMarathonAppCreate(d *schema.ResourceData, meta interface{}) error {
 		}
 	}
 
-	log.Printf("=====\n%#v\n", appMutable)
-
-	app, err := c.AppCreate(appMutable)
-	if err != nil {
-		log.Println(err)
-		return err
-	}
-
-	d.SetId(app.Id)
-	d.Set("version", app.Version)
-
-	// inspect the returned APP stuff
-
-	return resourceMarathonAppRead(d, meta)
-}
-
-func resourceMarathonAppRead(d *schema.ResourceData, meta interface{}) error {
-	c := meta.(*marathon.Client)
-
-	// client should throw error if id is nil
-	app, _ := c.AppRead(d.Id())
-
-	log.Printf("== READ ==\n%#v\n", app)
-
-	if app.Id == "" {
-		d.SetId("")
-	}
-
-	// Add in computed values from App struct here.
-
-	return nil
-}
-
-/*
-// test mutating existing state of AppMutable fields
-
-func resourceMarathonAppUpdate(d *schema.ResourceData, meta interface{}) error {
-	return resourceMarathonAppCreate(d, meta)
-}
-*/
-
-func resourceMarathonAppDelete(d *schema.ResourceData, meta interface{}) error {
-	c := meta.(*marathon.Client)
-
-	if err := c.AppDelete(d.Id()); err != nil {
-		return err
-	}
-
-	return nil
+	return appMutable
 }
