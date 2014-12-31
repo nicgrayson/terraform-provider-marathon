@@ -2,7 +2,6 @@ package marathon
 
 import (
 	"fmt"
-	//"log"
 	"time"
 
 	"github.com/Banno/go-marathon"
@@ -58,11 +57,12 @@ func TestAccMarathonApp_basic(t *testing.T) {
 
 	testCheckCreate := func(app *marathon.App) resource.TestCheckFunc {
 		return func(s *terraform.State) error {
+			time.Sleep(1 * time.Second)
 			if a.Version == "" {
 				return fmt.Errorf("Didn't return a version so something is broken: %#v", app)
 			}
 			if a.Instances != 1 {
-				return fmt.Errorf("Wrong number of instances %#v", app)
+				return fmt.Errorf("AppCreate: Wrong number of instances %#v", app)
 			}
 			return nil
 		}
@@ -71,7 +71,7 @@ func TestAccMarathonApp_basic(t *testing.T) {
 	testCheckUpdate := func(app *marathon.App) resource.TestCheckFunc {
 		return func(s *terraform.State) error {
 			if a.Instances != 2 {
-				return fmt.Errorf("Wrong number of instances %#v", app)
+				return fmt.Errorf("AppUpdate: Wrong number of instances %#v", app)
 
 			}
 			return nil
@@ -79,9 +79,9 @@ func TestAccMarathonApp_basic(t *testing.T) {
 	}
 
 	resource.Test(t, resource.TestCase{
-		PreCheck:  func() { testAccPreCheck(t) },
-		Providers: testAccProviders,
-		//		CheckDestroy: testAccCheckMarathonAppDestroy,
+		PreCheck:     func() { testAccPreCheck(t) },
+		Providers:    testAccProviders,
+		CheckDestroy: testAccCheckMarathonAppDestroy,
 		Steps: []resource.TestStep{
 			resource.TestStep{
 				Config: testAccCheckMarathonAppConfig_basic,
@@ -127,22 +127,14 @@ func testAccReadApp(name string, app *marathon.App) resource.TestCheckFunc {
 	}
 }
 
-/*
-TODO: prove that this works
-
 func testAccCheckMarathonAppDestroy(s *terraform.State) error {
+
 	client := testAccProvider.Meta().(*marathon.Client)
 
-	for _, rs := range s.RootModule().Resources {
-		if rs.Type != "marathon_app" {
-			continue
-		}
-
-		client.AppRead("/test")
-
-		// make sure that it's properly destroyed
+	_, err := client.AppRead("/app-create-example")
+	if err == nil {
+		return fmt.Errorf("App not deleted! %#v", err)
 	}
 
 	return nil
 }
-*/
