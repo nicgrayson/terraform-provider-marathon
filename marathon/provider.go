@@ -18,7 +18,7 @@ func Provider() terraform.ResourceProvider {
 					}
 					return nil, nil
 				},
-				Description: "Marathon's Hostname or IP",
+				Description: "Marathon's Base HTTP URL",
 			},
 		},
 
