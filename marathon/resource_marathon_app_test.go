@@ -113,7 +113,7 @@ func testAccReadApp(name string, app *marathon.App) resource.TestCheckFunc {
 
 		client := testAccProvider.Meta().(*marathon.Client)
 
-		appRead, _ := client.AppRead(rs.Primary.Attributes["name"])
+		appRead, _ := client.AppRead(rs.Primary.Attributes["app_id"])
 
 		//		log.Printf("=== testAccContainerExists: appRead ===\n%#v\n", appRead)
 
