@@ -1,7 +1,7 @@
 # doing a dev build
 
-make dev
+go install
 
-# running an acceptance test
+# running the tests
 
-make testacc TEST=./builtin/providers/marathon TESTARGS='-run=MarathonApp_basic'
+go test ./...
