@@ -9,27 +9,16 @@ import (
 func Provider() terraform.ResourceProvider {
 	return &schema.Provider{
 		Schema: map[string]*schema.Schema{
-			"host": &schema.Schema{
+			"url": &schema.Schema{
 				Type:     schema.TypeString,
 				Required: true,
 				DefaultFunc: func() (interface{}, error) {
-					if v := os.Getenv("MARATHON_HOST"); v != "" {
+					if v := os.Getenv("MARATHON_URL"); v != "" {
 						return v, nil
 					}
 					return nil, nil
 				},
-				Description: "Marathon's Hostname or IP",
-			},
-			"port": &schema.Schema{
-				Type:     schema.TypeInt,
-				Optional: true,
-				DefaultFunc: func() (interface{}, error) {
-					if v := os.Getenv("MARATHON_PORT"); v != "" {
-						return v, nil
-					}
-					return nil, nil
-				},
-				Default: 8080,
+				Description: "Marathon's Base HTTP URL",
 			},
 		},
 
@@ -43,8 +32,7 @@ func Provider() terraform.ResourceProvider {
 
 func providerConfigure(d *schema.ResourceData) (interface{}, error) {
 	config := Config{
-		Host: d.Get("host").(string),
-		Port: d.Get("port").(int),
+		Url: d.Get("url").(string),
 	}
 
 	if err := config.loadAndValidate(); err != nil {

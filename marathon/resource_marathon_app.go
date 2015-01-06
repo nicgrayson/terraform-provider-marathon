@@ -18,9 +18,9 @@ func resourceMarathonApp() *schema.Resource {
 		Delete: resourceMarathonAppDelete,
 
 		Schema: map[string]*schema.Schema{
-			"name": &schema.Schema{ // represents 'id' field
+			"app_id": &schema.Schema{
 				Type:     schema.TypeString,
-				Optional: true,
+				Required: true,
 				ForceNew: false,
 			},
 			"args": &schema.Schema{
@@ -165,6 +165,7 @@ func resourceMarathonApp() *schema.Resource {
 						"type": &schema.Schema{
 							Type:     schema.TypeString,
 							Optional: true,
+							Default:  "DOCKER",
 						},
 					},
 				},
@@ -172,6 +173,7 @@ func resourceMarathonApp() *schema.Resource {
 			"cpus": &schema.Schema{
 				Type:     schema.TypeString, //should be float -_-
 				Optional: true,
+				Default:  "0.1",
 				ForceNew: false,
 			},
 			"dependencies": &schema.Schema{
@@ -190,6 +192,7 @@ func resourceMarathonApp() *schema.Resource {
 			"env": &schema.Schema{
 				Type:     schema.TypeMap,
 				Optional: true,
+				ForceNew: false,
 			},
 			"health_checks": &schema.Schema{
 				Type:     schema.TypeList,
@@ -245,11 +248,13 @@ func resourceMarathonApp() *schema.Resource {
 			"instances": &schema.Schema{
 				Type:     schema.TypeInt,
 				Optional: true,
+				Default:  1,
 				ForceNew: false,
 			},
 			"mem": &schema.Schema{
 				Type:     schema.TypeString, //should be float -_-
 				Optional: true,
+				Default:  "128",
 				ForceNew: false,
 			},
 			"ports": &schema.Schema{
@@ -312,7 +317,10 @@ func resourceMarathonAppRead(d *schema.ResourceData, meta interface{}) error {
 	c := meta.(*marathon.Client)
 
 	// client should throw error if id is nil
-	app, _ := c.AppRead(d.Id())
+	app, err := c.AppRead(d.Id())
+	if err != nil {
+		return err
+	}
 
 	if app.Id == "" {
 		d.SetId("")
@@ -375,7 +383,7 @@ func mutateResourceToAppMutable(d *schema.ResourceData) marathon.AppMutable {
 
 	appMutable := marathon.AppMutable{}
 
-	if v, ok := d.GetOk("name"); ok {
+	if v, ok := d.GetOk("app_id"); ok {
 		appMutable.Id = v.(string)
 	}
 

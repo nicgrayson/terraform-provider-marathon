@@ -29,11 +29,7 @@ func TestProvider_impl(t *testing.T) {
 }
 
 func testAccPreCheck(t *testing.T) {
-	if v := os.Getenv("MARATHON_HOST"); v == "" {
-		t.Fatal("MARATHON_HOST must be set for the acceptance tests to work.")
-	}
-
-	if v := os.Getenv("MARATHON_PORT"); v == "" {
-		t.Fatal("MARATHON_PORT must be set for the acceptance tests to work.")
+	if v := os.Getenv("MARATHON_URL"); v == "" {
+		t.Fatal("MARATHON_URL must be set for the acceptance tests to work.")
 	}
 }
