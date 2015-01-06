@@ -1,14 +1,12 @@
 // use terraform.tfvars
-variable "marathon_host" {}
-variable "marathon_port" {}
+variable "marathon_url" {}
 
 provider "marathon" {
-  host = "${var.marathon_host}"
-  port = "${var.marathon_port}"
+  url = "${var.marathon_url}"
 }
 
 resource "marathon_app" "app-create-example" {
-	name = "app-create-example"
+	app_id = "app-create-example"
 
 	cmd = "env && python3 -m http.server $PORT0"
 	

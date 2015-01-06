@@ -13,12 +13,11 @@ import (
 
 const testAccCheckMarathonAppConfig_basic = `
 resource "marathon_app" "app-create-example" {
-	name = "/app-create-example"
+	 app_id= "/app-create-example"
 
 	cmd = "env && python3 -m http.server $PORT0"
 	
 	container {
-		type = "DOCKER"
 		docker {
 			image = "python:3"
                 }
@@ -33,12 +32,11 @@ resource "marathon_app" "app-create-example" {
 
 const testAccCheckMarathonAppConfig_update = `
 resource "marathon_app" "app-create-example" {
-	name = "/app-create-example"
+	app_id = "/app-create-example"
 
 	cmd = "env && python3 -m http.server $PORT0"
 	
 	container {
-		type = "DOCKER"
 		docker {
 			image = "python:3"
                 }

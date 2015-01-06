@@ -5,8 +5,7 @@ import (
 )
 
 type Config struct {
-	Host string
-	Port int
+	Url string
 
 	client *marathon.Client
 }
@@ -14,7 +13,7 @@ type Config struct {
 func (c *Config) loadAndValidate() error {
 
 	// this needs to return an err as well.
-	c.client = marathon.NewClient(c.Host, c.Port)
+	c.client = marathon.NewClientForUrl(c.Url)
 
 	return nil
 }
