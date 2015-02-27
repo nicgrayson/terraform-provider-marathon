@@ -360,7 +360,7 @@ func resourceMarathonAppUpdate(d *schema.ResourceData, meta interface{}) error {
 func resourceMarathonAppDelete(d *schema.ResourceData, meta interface{}) error {
 	c := meta.(*marathon.Client)
 
-	if err := c.AppDelete(d.Id()); err != nil {
+	if err := c.AppDelete(d.Id(), true); err != nil {
 		return err
 	}
 
