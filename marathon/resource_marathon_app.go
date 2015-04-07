@@ -265,7 +265,7 @@ func resourceMarathonApp() *schema.Resource {
 			"require_ports": &schema.Schema{
 				Type:     schema.TypeBool,
 				Optional: true,
-				Default:  true,
+				Default:  false,
 				ForceNew: false,
 			},
 			"upgrade_strategy": &schema.Schema{
