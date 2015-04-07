@@ -265,6 +265,12 @@ func resourceMarathonApp() *schema.Resource {
 					Type: schema.TypeInt,
 				},
 			},
+			"require_ports": &schema.Schema{
+				Type:     schema.TypeBool,
+				Optional: true,
+				Default:  true,
+				ForceNew: false,
+			},
 			"upgrade_strategy": &schema.Schema{
 				Type:     schema.TypeMap,
 				Optional: true,
@@ -591,6 +597,11 @@ func mutateResourceToAppMutable(d *schema.ResourceData) marathon.AppMutable {
 	if v, ok := d.GetOk("mem"); ok {
 		mem, _ := strconv.ParseFloat(v.(string), 64)
 		appMutable.Mem = mem
+	}
+
+	if v, ok := d.GetOk("require_ports"); ok {
+		requirePorts, _ := strconv.ParseBool(v.(string))
+		appMutable.RequirePorts = requirePorts
 	}
 
 	if v, ok := d.GetOk("ports.#"); ok {
