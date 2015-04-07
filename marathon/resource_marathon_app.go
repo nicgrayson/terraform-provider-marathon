@@ -184,11 +184,6 @@ func resourceMarathonApp() *schema.Resource {
 					Type: schema.TypeString,
 				},
 			},
-			"disk": &schema.Schema{
-				Type:     schema.TypeString, //should be float -_-
-				Optional: true,
-				ForceNew: false,
-			},
 			"env": &schema.Schema{
 				Type:     schema.TypeMap,
 				Optional: true,
@@ -524,11 +519,6 @@ func mutateResourceToAppMutable(d *schema.ResourceData) marathon.AppMutable {
 		if len(dependencies) != 0 {
 			appMutable.Dependencies = dependencies
 		}
-	}
-
-	if v, ok := d.GetOk("disk"); ok {
-		disk, _ := strconv.ParseFloat(v.(string), 64)
-		appMutable.Disk = disk
 	}
 
 	if v, ok := d.GetOk("env"); ok {
