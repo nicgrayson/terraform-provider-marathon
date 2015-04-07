@@ -278,6 +278,12 @@ func resourceMarathonApp() *schema.Resource {
 						"minimum_health_capacity": &schema.Schema{
 							Type:     schema.TypeFloat,
 							Optional: true,
+							Default:  1.0,
+						},
+						"maximum_over_capacity": &schema.Schema{
+							Type:     schema.TypeFloat,
+							Optional: true,
+							Default:  1.0,
 						},
 					},
 				},
@@ -637,6 +643,7 @@ func mutateResourceToAppMutable(d *schema.ResourceData) marathon.AppMutable {
 	if v, ok := d.GetOk("upgrade_strategy.minimum_health_capacity"); ok {
 		upgradeStrategy := &marathon.UpgradeStrategy{
 			MinimumHealthCapacity: v.(float64),
+			MaximumOverCapicity:   v.(float64),
 		}
 		appMutable.UpgradeStrategy = upgradeStrategy
 
