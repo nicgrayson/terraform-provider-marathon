@@ -6,6 +6,7 @@ import (
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/helper/schema"
 	"log"
+	"reflect"
 	"strconv"
 	"time"
 )
@@ -329,10 +330,50 @@ func resourceMarathonAppRead(d *schema.ResourceData, meta interface{}) error {
 		d.SetId("")
 	}
 
-	// Add in computed values from App struct here.
+	// App Mutable
+	d.Set("args", app.Args)
+	d.Set("backoff_seconds", app.BackoffSeconds)
+	d.Set("backoff_factor", app.BackoffFactor)
+	d.Set("cmd", app.Cmd)
+	// d.Set("constraints", app.Constraints)
+	// d.Set("container", app.Container)
+	d.Set("cpus", app.Cpus)
+	d.Set("dependencies", app.Dependencies)
+	d.Set("env", app.Env)
+	// d.Set("health_checks", app.HealthChecks)
+	d.Set("instances", app.Instances)
+	d.Set("mem", app.Mem)
+
+	if givenFreePortsDoesNotEqualAllocated(d, app) {
+		d.Set("ports", app.Ports)
+	}
+
+	d.Set("require_ports", app.RequirePorts)
+	// d.Set("upgrade_strategy", app.UpgradeStrategy)
+	d.Set("uris", app.Uris)
+
+	// App
+	d.Set("executor", app.Executor)
+	d.Set("disk", app.Disk)
+	d.Set("user", app.User)
 	d.Set("version", app.Version)
 
 	return nil
+}
+
+func givenFreePortsDoesNotEqualAllocated(d *schema.ResourceData, app *marathon.App) bool {
+	marathonPorts := make([]int, len(app.Ports))
+	for i, port := range app.Ports {
+		if port >= 10000 && port < 11000 {
+			marathonPorts[i] = 0
+		} else {
+			marathonPorts[i] = port
+		}
+	}
+
+	ports := getPorts(d)
+
+	return !reflect.DeepEqual(marathonPorts, ports)
 }
 
 func resourceMarathonAppUpdate(d *schema.ResourceData, meta interface{}) error {
@@ -591,17 +632,7 @@ func mutateResourceToAppMutable(d *schema.ResourceData) marathon.AppMutable {
 		appMutable.RequirePorts = v.(bool)
 	}
 
-	if v, ok := d.GetOk("ports.#"); ok {
-		ports := make([]int, v.(int))
-
-		for i, _ := range ports {
-			ports[i] = d.Get("ports." + strconv.Itoa(i)).(int)
-		}
-
-		if len(ports) != 0 {
-			appMutable.Ports = ports
-		}
-	}
+	appMutable.Ports = getPorts(d)
 
 	if v, ok := d.GetOk("upgrade_strategy.minimum_health_capacity"); ok {
 		upgradeStrategy := &marathon.UpgradeStrategy{
@@ -624,4 +655,16 @@ func mutateResourceToAppMutable(d *schema.ResourceData) marathon.AppMutable {
 	}
 
 	return appMutable
+}
+
+func getPorts(d *schema.ResourceData) []int {
+	ports := make([]int, 0)
+	if v, ok := d.GetOk("ports.#"); ok {
+		ports = make([]int, v.(int))
+
+		for i, _ := range ports {
+			ports[i] = d.Get("ports." + strconv.Itoa(i)).(int)
+		}
+	}
+	return ports
 }
