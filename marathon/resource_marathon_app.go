@@ -32,17 +32,19 @@ func resourceMarathonApp() *schema.Resource {
 				},
 			},
 			"backoff_seconds": &schema.Schema{
-				Type:     schema.TypeString, //should be float -_-
+				Type:     schema.TypeFloat,
 				Optional: true,
 				ForceNew: false,
+				Default:  1,
 			},
 			"backoff_factor": &schema.Schema{
-				Type:     schema.TypeString, //should be float -_-
+				Type:     schema.TypeFloat,
 				Optional: true,
 				ForceNew: false,
+				Default:  1.15,
 			},
 			"cmd": &schema.Schema{
-				Type:     schema.TypeString, //should be float -_-
+				Type:     schema.TypeFloat,
 				Optional: true,
 				ForceNew: false,
 			},
@@ -171,9 +173,9 @@ func resourceMarathonApp() *schema.Resource {
 				},
 			},
 			"cpus": &schema.Schema{
-				Type:     schema.TypeString, //should be float -_-
+				Type:     schema.TypeFloat,
 				Optional: true,
-				Default:  "0.1",
+				Default:  0.1,
 				ForceNew: false,
 			},
 			"dependencies": &schema.Schema{
@@ -247,9 +249,9 @@ func resourceMarathonApp() *schema.Resource {
 				ForceNew: false,
 			},
 			"mem": &schema.Schema{
-				Type:     schema.TypeString, //should be float -_-
+				Type:     schema.TypeFloat,
 				Optional: true,
-				Default:  "128",
+				Default:  128,
 				ForceNew: false,
 			},
 			"ports": &schema.Schema{
@@ -273,7 +275,7 @@ func resourceMarathonApp() *schema.Resource {
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
 						"minimum_health_capacity": &schema.Schema{
-							Type:     schema.TypeString,
+							Type:     schema.TypeFloat,
 							Optional: true,
 						},
 					},
@@ -401,13 +403,11 @@ func mutateResourceToAppMutable(d *schema.ResourceData) marathon.AppMutable {
 	}
 
 	if v, ok := d.GetOk("backoff_seconds"); ok {
-		backoffSeconds, _ := strconv.ParseFloat(v.(string), 64)
-		appMutable.BackoffSeconds = backoffSeconds
+		appMutable.BackoffSeconds = v.(float64)
 	}
 
 	if v, ok := d.GetOk("backoff_factor"); ok {
-		backoffFactor, _ := strconv.ParseFloat(v.(string), 64)
-		appMutable.BackoffFactor = backoffFactor
+		appMutable.BackoffFactor = v.(float64)
 	}
 
 	if v, ok := d.GetOk("cmd"); ok {
@@ -505,8 +505,7 @@ func mutateResourceToAppMutable(d *schema.ResourceData) marathon.AppMutable {
 	}
 
 	if v, ok := d.GetOk("cpus"); ok {
-		cpus, _ := strconv.ParseFloat(v.(string), 64)
-		appMutable.Cpus = cpus
+		appMutable.Cpus = v.(float64)
 	}
 
 	if v, ok := d.GetOk("dependencies.#"); ok {
@@ -585,13 +584,11 @@ func mutateResourceToAppMutable(d *schema.ResourceData) marathon.AppMutable {
 	}
 
 	if v, ok := d.GetOk("mem"); ok {
-		mem, _ := strconv.ParseFloat(v.(string), 64)
-		appMutable.Mem = mem
+		appMutable.Mem = v.(float64)
 	}
 
 	if v, ok := d.GetOk("require_ports"); ok {
-		requirePorts, _ := strconv.ParseBool(v.(string))
-		appMutable.RequirePorts = requirePorts
+		appMutable.RequirePorts = v.(bool)
 	}
 
 	if v, ok := d.GetOk("ports.#"); ok {
@@ -607,10 +604,8 @@ func mutateResourceToAppMutable(d *schema.ResourceData) marathon.AppMutable {
 	}
 
 	if v, ok := d.GetOk("upgrade_strategy.minimum_health_capacity"); ok {
-		capacity, _ := strconv.ParseFloat(v.(string), 64)
-
 		upgradeStrategy := &marathon.UpgradeStrategy{
-			MinimumHealthCapacity: capacity,
+			MinimumHealthCapacity: v.(float64),
 		}
 		appMutable.UpgradeStrategy = upgradeStrategy
 
