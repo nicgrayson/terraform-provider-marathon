@@ -6,6 +6,7 @@ import (
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/helper/schema"
 	"log"
+	"reflect"
 	"strconv"
 	"time"
 )
@@ -32,17 +33,19 @@ func resourceMarathonApp() *schema.Resource {
 				},
 			},
 			"backoff_seconds": &schema.Schema{
-				Type:     schema.TypeString, //should be float -_-
+				Type:     schema.TypeFloat,
 				Optional: true,
 				ForceNew: false,
+				Default:  1,
 			},
 			"backoff_factor": &schema.Schema{
-				Type:     schema.TypeString, //should be float -_-
+				Type:     schema.TypeFloat,
 				Optional: true,
 				ForceNew: false,
+				Default:  1.15,
 			},
 			"cmd": &schema.Schema{
-				Type:     schema.TypeString, //should be float -_-
+				Type:     schema.TypeFloat,
 				Optional: true,
 				ForceNew: false,
 			},
@@ -175,9 +178,9 @@ func resourceMarathonApp() *schema.Resource {
 				},
 			},
 			"cpus": &schema.Schema{
-				Type:     schema.TypeString, //should be float -_-
+				Type:     schema.TypeFloat,
 				Optional: true,
-				Default:  "0.1",
+				Default:  0.1,
 				ForceNew: false,
 			},
 			"dependencies": &schema.Schema{
@@ -187,11 +190,6 @@ func resourceMarathonApp() *schema.Resource {
 				Elem: &schema.Schema{
 					Type: schema.TypeString,
 				},
-			},
-			"disk": &schema.Schema{
-				Type:     schema.TypeString, //should be float -_-
-				Optional: true,
-				ForceNew: false,
 			},
 			"env": &schema.Schema{
 				Type:     schema.TypeMap,
@@ -256,9 +254,9 @@ func resourceMarathonApp() *schema.Resource {
 				ForceNew: false,
 			},
 			"mem": &schema.Schema{
-				Type:     schema.TypeString, //should be float -_-
+				Type:     schema.TypeFloat,
 				Optional: true,
-				Default:  "128",
+				Default:  128,
 				ForceNew: false,
 			},
 			"ports": &schema.Schema{
@@ -269,6 +267,12 @@ func resourceMarathonApp() *schema.Resource {
 					Type: schema.TypeInt,
 				},
 			},
+			"require_ports": &schema.Schema{
+				Type:     schema.TypeBool,
+				Optional: true,
+				Default:  false,
+				ForceNew: false,
+			},
 			"upgrade_strategy": &schema.Schema{
 				Type:     schema.TypeMap,
 				Optional: true,
@@ -276,8 +280,14 @@ func resourceMarathonApp() *schema.Resource {
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
 						"minimum_health_capacity": &schema.Schema{
-							Type:     schema.TypeString,
+							Type:     schema.TypeFloat,
 							Optional: true,
+							Default:  1.0,
+						},
+						"maximum_over_capacity": &schema.Schema{
+							Type:     schema.TypeFloat,
+							Optional: true,
+							Default:  1.0,
 						},
 					},
 				},
@@ -330,10 +340,50 @@ func resourceMarathonAppRead(d *schema.ResourceData, meta interface{}) error {
 		d.SetId("")
 	}
 
-	// Add in computed values from App struct here.
+	// App Mutable
+	d.Set("args", app.Args)
+	d.Set("backoff_seconds", app.BackoffSeconds)
+	d.Set("backoff_factor", app.BackoffFactor)
+	d.Set("cmd", app.Cmd)
+	// d.Set("constraints", app.Constraints)
+	// d.Set("container", app.Container)
+	d.Set("cpus", app.Cpus)
+	d.Set("dependencies", app.Dependencies)
+	d.Set("env", app.Env)
+	// d.Set("health_checks", app.HealthChecks)
+	d.Set("instances", app.Instances)
+	d.Set("mem", app.Mem)
+
+	if givenFreePortsDoesNotEqualAllocated(d, app) {
+		d.Set("ports", app.Ports)
+	}
+
+	d.Set("require_ports", app.RequirePorts)
+	// d.Set("upgrade_strategy", app.UpgradeStrategy)
+	d.Set("uris", app.Uris)
+
+	// App
+	d.Set("executor", app.Executor)
+	d.Set("disk", app.Disk)
+	d.Set("user", app.User)
 	d.Set("version", app.Version)
 
 	return nil
+}
+
+func givenFreePortsDoesNotEqualAllocated(d *schema.ResourceData, app *marathon.App) bool {
+	marathonPorts := make([]int, len(app.Ports))
+	for i, port := range app.Ports {
+		if port >= 10000 && port < 11000 {
+			marathonPorts[i] = 0
+		} else {
+			marathonPorts[i] = port
+		}
+	}
+
+	ports := getPorts(d)
+
+	return !reflect.DeepEqual(marathonPorts, ports)
 }
 
 func resourceMarathonAppUpdate(d *schema.ResourceData, meta interface{}) error {
@@ -404,13 +454,11 @@ func mutateResourceToAppMutable(d *schema.ResourceData) marathon.AppMutable {
 	}
 
 	if v, ok := d.GetOk("backoff_seconds"); ok {
-		backoffSeconds, _ := strconv.ParseFloat(v.(string), 64)
-		appMutable.BackoffSeconds = backoffSeconds
+		appMutable.BackoffSeconds = v.(float64)
 	}
 
 	if v, ok := d.GetOk("backoff_factor"); ok {
-		backoffFactor, _ := strconv.ParseFloat(v.(string), 64)
-		appMutable.BackoffFactor = backoffFactor
+		appMutable.BackoffFactor = v.(float64)
 	}
 
 	if v, ok := d.GetOk("cmd"); ok {
@@ -512,8 +560,7 @@ func mutateResourceToAppMutable(d *schema.ResourceData) marathon.AppMutable {
 	}
 
 	if v, ok := d.GetOk("cpus"); ok {
-		cpus, _ := strconv.ParseFloat(v.(string), 64)
-		appMutable.Cpus = cpus
+		appMutable.Cpus = v.(float64)
 	}
 
 	if v, ok := d.GetOk("dependencies.#"); ok {
@@ -526,11 +573,6 @@ func mutateResourceToAppMutable(d *schema.ResourceData) marathon.AppMutable {
 		if len(dependencies) != 0 {
 			appMutable.Dependencies = dependencies
 		}
-	}
-
-	if v, ok := d.GetOk("disk"); ok {
-		disk, _ := strconv.ParseFloat(v.(string), 64)
-		appMutable.Disk = disk
 	}
 
 	if v, ok := d.GetOk("env"); ok {
@@ -597,27 +639,19 @@ func mutateResourceToAppMutable(d *schema.ResourceData) marathon.AppMutable {
 	}
 
 	if v, ok := d.GetOk("mem"); ok {
-		mem, _ := strconv.ParseFloat(v.(string), 64)
-		appMutable.Mem = mem
+		appMutable.Mem = v.(float64)
 	}
 
-	if v, ok := d.GetOk("ports.#"); ok {
-		ports := make([]int, v.(int))
-
-		for i, _ := range ports {
-			ports[i] = d.Get("ports." + strconv.Itoa(i)).(int)
-		}
-
-		if len(ports) != 0 {
-			appMutable.Ports = ports
-		}
+	if v, ok := d.GetOk("require_ports"); ok {
+		appMutable.RequirePorts = v.(bool)
 	}
+
+	appMutable.Ports = getPorts(d)
 
 	if v, ok := d.GetOk("upgrade_strategy.minimum_health_capacity"); ok {
-		capacity, _ := strconv.ParseFloat(v.(string), 64)
-
 		upgradeStrategy := &marathon.UpgradeStrategy{
-			MinimumHealthCapacity: capacity,
+			MinimumHealthCapacity: v.(float64),
+			MaximumOverCapicity:   v.(float64),
 		}
 		appMutable.UpgradeStrategy = upgradeStrategy
 
@@ -636,4 +670,16 @@ func mutateResourceToAppMutable(d *schema.ResourceData) marathon.AppMutable {
 	}
 
 	return appMutable
+}
+
+func getPorts(d *schema.ResourceData) []int {
+	ports := make([]int, 0)
+	if v, ok := d.GetOk("ports.#"); ok {
+		ports = make([]int, v.(int))
+
+		for i, _ := range ports {
+			ports[i] = d.Get("ports." + strconv.Itoa(i)).(int)
+		}
+	}
+	return ports
 }
