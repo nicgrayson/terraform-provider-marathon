@@ -95,6 +95,10 @@ func resourceMarathonApp() *schema.Resource {
 										Type:     schema.TypeString,
 										Optional: true,
 									},
+									"privileged": &schema.Schema{
+										Type: schema.TypeBool,
+										Optional: true,
+									},
 									"port_mappings": &schema.Schema{
 										Type:     schema.TypeList,
 										Optional: true,
@@ -449,6 +453,10 @@ func mutateResourceToAppMutable(d *schema.ResourceData) marathon.AppMutable {
 
 			if v, ok := d.GetOk("container.0.docker.0.network"); ok {
 				docker.Network = v.(string)
+			}
+
+			if v, ok := d.GetOk("container.0.docker.0.privileged"); ok {
+				docker.Privileged = v.(bool)
 			}
 
 			if v, ok := d.GetOk("container.0.docker.0.port_mappings.0.port_mapping.#"); ok {
