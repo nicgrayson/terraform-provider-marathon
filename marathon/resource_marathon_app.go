@@ -45,7 +45,7 @@ func resourceMarathonApp() *schema.Resource {
 				Default:  1.15,
 			},
 			"cmd": &schema.Schema{
-				Type:     schema.TypeFloat,
+				Type:     schema.TypeString,
 				Optional: true,
 				ForceNew: false,
 			},
@@ -99,7 +99,7 @@ func resourceMarathonApp() *schema.Resource {
 										Optional: true,
 									},
 									"privileged": &schema.Schema{
-										Type: schema.TypeBool,
+										Type:     schema.TypeBool,
 										Optional: true,
 									},
 									"port_mappings": &schema.Schema{
