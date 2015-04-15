@@ -3,21 +3,15 @@ package marathon
 import (
 	"github.com/hashicorp/terraform/helper/schema"
 	"github.com/hashicorp/terraform/terraform"
-	"os"
 )
 
 func Provider() terraform.ResourceProvider {
 	return &schema.Provider{
 		Schema: map[string]*schema.Schema{
 			"url": &schema.Schema{
-				Type:     schema.TypeString,
-				Required: true,
-				DefaultFunc: func() (interface{}, error) {
-					if v := os.Getenv("MARATHON_URL"); v != "" {
-						return v, nil
-					}
-					return nil, nil
-				},
+				Type:        schema.TypeString,
+				Required:    true,
+				DefaultFunc: schema.EnvDefaultFunc("MARATHON_URL", nil),
 				Description: "Marathon's Base HTTP URL",
 			},
 		},
