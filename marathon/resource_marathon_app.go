@@ -322,10 +322,42 @@ func resourceMarathonAppCreate(d *schema.ResourceData, meta interface{}) error {
 
 	d.SetId(app.Id)
 
+	// Spin until the app is finished deploying
+	stateConf := &resource.StateChangeConf{
+		Pending:    []string{"pending"},
+		Target:     "completed",
+		Refresh:    checkDeploymentsFunc(c, app),
+		Timeout:    10 * time.Minute,
+		Delay:      1 * time.Second,
+		MinTimeout: 1 * time.Second,
+	}
+
+	_, error := stateConf.WaitForState()
+	if error != nil {
+		return fmt.Errorf("Timed out or something waiting for deployment of marathon app: %#v", err)
+	}
+
 	// inspect the returned App stuff and set more computed values
 
 	return resourceMarathonAppRead(d, meta)
 }
+
+func checkDeploymentsFunc(c *marathon.Client, app *marathon.App) resource.StateRefreshFunc {
+	return func() (interface{}, string, error) {
+		app, err := c.AppRead(app.Id)
+		if err != nil {
+			log.Printf("App read returned error: %#v\n", err)
+			return nil, "pending", err
+		}
+
+		if len(app.Deployments) != 0 {
+			return nil, "pending", nil
+		}
+
+		return app, "completed", nil
+	}
+}
+
 
 func resourceMarathonAppRead(d *schema.ResourceData, meta interface{}) error {
 	c := meta.(*marathon.Client)
