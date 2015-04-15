@@ -24,6 +24,7 @@ resource "marathon_app" "app-create-example" {
                 }
 	}
 
+  ports = [0]
 	cpus = "0.01"
 	instances = 1
 	mem = 100
@@ -44,6 +45,7 @@ resource "marathon_app" "app-create-example" {
                 }
 	}
 
+  ports = [0]
 	cpus = "0.01"
 	instances = 2
 	mem = 100
