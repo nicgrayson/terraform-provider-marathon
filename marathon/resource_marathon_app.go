@@ -432,7 +432,7 @@ func resourceMarathonAppRead(d *schema.ResourceData, meta interface{}) error {
 func givenFreePortsDoesNotEqualAllocated(d *schema.ResourceData, app *marathon.App) bool {
 	marathonPorts := make([]int, len(app.Ports))
 	for i, port := range app.Ports {
-		if port >= 10000 && port < 11000 {
+		if port >= 10000 && port <= 20000 {
 			marathonPorts[i] = 0
 		} else {
 			marathonPorts[i] = port
