@@ -332,8 +332,8 @@ func resourceMarathonAppCreate(d *schema.ResourceData, meta interface{}) error {
 		MinTimeout: 1 * time.Second,
 	}
 
-	_, error := stateConf.WaitForState()
-	if error != nil {
+	_, err = stateConf.WaitForState()
+	if err != nil {
 		return fmt.Errorf("Timed out or something waiting for deployment of marathon app: %#v", err)
 	}
 
@@ -344,20 +344,42 @@ func resourceMarathonAppCreate(d *schema.ResourceData, meta interface{}) error {
 
 func checkDeploymentsFunc(c *marathon.Client, app *marathon.App) resource.StateRefreshFunc {
 	return func() (interface{}, string, error) {
-		app, err := c.AppRead(app.Id)
+		deployments, err := c.Deployments()
 		if err != nil {
-			log.Printf("App read returned error: %#v\n", err)
-			return nil, "pending", err
+			log.Printf("Deployments endpoint returned error: %#v\n", err)
+			return nil, "failed", err
 		}
 
-		if len(app.Deployments) != 0 {
+		deploymentsForApp := findDeploymentsForApp(deployments, app)
+		if len(deploymentsForApp) != 0 {
+			deploymentFormat := "Deployment of %v not complete yet:\n  Deployment id: %v\n  Steps: %v\n  CurrentActions: %v\n  Steps left: %d"
+			for _, deployment := range deployments {
+				stepsLeft := deployment.TotalSteps - deployment.CurrentStep + 1
+				log.Printf(deploymentFormat, app.Id, deployment.Id, deployment.Steps, deployment.CurrentActions, stepsLeft)
+			}
 			return nil, "pending", nil
 		}
 
-		return app, "completed", nil
+		return deploymentsForApp, "completed", nil
 	}
 }
 
+func findDeploymentsForApp(deployments []marathon.Deployment, app *marathon.App) ([]marathon.Deployment) {
+	var foundDeployments []marathon.Deployment
+
+	for _, deployment := range deployments {
+		if containsApp(deployment.AffectedApps, app.Id) {
+			foundDeployments = append(foundDeployments, deployment)
+		}
+	}
+
+	return foundDeployments
+}
+
+func containsApp(apps []string, app string) bool {
+	for _, appName := range apps { if appName == app { return true } }
+	return false
+}
 
 func resourceMarathonAppRead(d *schema.ResourceData, meta interface{}) error {
 	c := meta.(*marathon.Client)
