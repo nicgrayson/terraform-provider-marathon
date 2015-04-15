@@ -364,7 +364,7 @@ func checkDeploymentsFunc(c *marathon.Client, app *marathon.App) resource.StateR
 	}
 }
 
-func findDeploymentsForApp(deployments []marathon.Deployment, app *marathon.App) ([]marathon.Deployment) {
+func findDeploymentsForApp(deployments []marathon.Deployment, app *marathon.App) []marathon.Deployment {
 	var foundDeployments []marathon.Deployment
 
 	for _, deployment := range deployments {
@@ -377,7 +377,11 @@ func findDeploymentsForApp(deployments []marathon.Deployment, app *marathon.App)
 }
 
 func containsApp(apps []string, app string) bool {
-	for _, appName := range apps { if appName == app { return true } }
+	for _, appName := range apps {
+		if appName == app {
+			return true
+		}
+	}
 	return false
 }
 
