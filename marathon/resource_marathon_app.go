@@ -330,6 +330,7 @@ func resourceMarathonAppCreate(d *schema.ResourceData, meta interface{}) error {
 		Timeout:    10 * time.Minute,
 		Delay:      1 * time.Second,
 		MinTimeout: 1 * time.Second,
+		NotFoundChecks: 60,
 	}
 
 	_, err = stateConf.WaitForState()
