@@ -324,12 +324,12 @@ func resourceMarathonAppCreate(d *schema.ResourceData, meta interface{}) error {
 
 	// Spin until the app is finished deploying
 	stateConf := &resource.StateChangeConf{
-		Pending:    []string{"pending"},
-		Target:     "completed",
-		Refresh:    checkDeploymentsFunc(c, app),
-		Timeout:    10 * time.Minute,
-		Delay:      1 * time.Second,
-		MinTimeout: 1 * time.Second,
+		Pending:        []string{"pending"},
+		Target:         "completed",
+		Refresh:        checkDeploymentsFunc(c, app),
+		Timeout:        10 * time.Minute,
+		Delay:          1 * time.Second,
+		MinTimeout:     1 * time.Second,
 		NotFoundChecks: 60,
 	}
 
