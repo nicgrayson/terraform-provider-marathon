@@ -389,9 +389,14 @@ func containsApp(apps []string, app string) bool {
 func resourceMarathonAppRead(d *schema.ResourceData, meta interface{}) error {
 	c := meta.(*marathon.Client)
 
-	// client should throw error if id is nil
 	app, err := c.AppRead(d.Id())
+
 	if err != nil {
+		// Handle a deleted app
+		if err == marathon.ErrAppNotFound {
+			d.SetId("")
+			return nil
+		}
 		return err
 	}
 
