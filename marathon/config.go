@@ -1,7 +1,8 @@
 package marathon
 
 import (
-	"github.com/Banno/go-marathon"
+	"github.com/gambol99/go-marathon"
+	"os"
 )
 
 type Config struct {
@@ -13,7 +14,11 @@ type Config struct {
 func (c *Config) loadAndValidate() error {
 
 	// this needs to return an err as well.
-	c.client = marathon.NewClientForUrl(c.Url)
+	config := marathon.NewDefaultConfig()
+	config.URL = c.Url
+	config.LogOutput = os.Stdout
 
-	return nil
+	client, err := marathon.NewClient(config)
+	c.client = client.(*marathon.Client)
+	return err
 }

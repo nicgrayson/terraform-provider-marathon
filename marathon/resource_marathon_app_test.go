@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/Banno/go-marathon"
+	"github.com/gambol99/go-marathon"
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/terraform"
 
@@ -53,9 +53,9 @@ resource "marathon_app" "app-create-example" {
 
 func TestAccMarathonApp_basic(t *testing.T) {
 
-	var a marathon.App
+	var a marathon.Application
 
-	testCheckCreate := func(app *marathon.App) resource.TestCheckFunc {
+	testCheckCreate := func(app *marathon.Application) resource.TestCheckFunc {
 		return func(s *terraform.State) error {
 			time.Sleep(1 * time.Second)
 			if a.Version == "" {
@@ -68,7 +68,7 @@ func TestAccMarathonApp_basic(t *testing.T) {
 		}
 	}
 
-	testCheckUpdate := func(app *marathon.App) resource.TestCheckFunc {
+	testCheckUpdate := func(app *marathon.Application) resource.TestCheckFunc {
 		return func(s *terraform.State) error {
 			if a.Instances != 2 {
 				return fmt.Errorf("AppUpdate: Wrong number of instances %#v", app)
@@ -101,7 +101,7 @@ func TestAccMarathonApp_basic(t *testing.T) {
 	})
 }
 
-func testAccReadApp(name string, app *marathon.App) resource.TestCheckFunc {
+func testAccReadApp(name string, app *marathon.Application) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
 		rs, ok := s.RootModule().Resources[name]
 		if !ok {
@@ -115,7 +115,7 @@ func testAccReadApp(name string, app *marathon.App) resource.TestCheckFunc {
 
 		client := testAccProvider.Meta().(*marathon.Client)
 
-		appRead, _ := client.AppRead(rs.Primary.Attributes["app_id"])
+		appRead, _ := client.Application(rs.Primary.Attributes["app_id"])
 
 		//		log.Printf("=== testAccContainerExists: appRead ===\n%#v\n", appRead)
 
@@ -131,7 +131,7 @@ func testAccCheckMarathonAppDestroy(s *terraform.State) error {
 
 	client := testAccProvider.Meta().(*marathon.Client)
 
-	_, err := client.AppRead("/app-create-example")
+	_, err := client.Application("/app-create-example")
 	if err == nil {
 		return fmt.Errorf("App not deleted! %#v", err)
 	}
