@@ -130,6 +130,7 @@ func testAccReadApp(name string, app *marathon.Application) resource.TestCheckFu
 }
 
 func testAccCheckMarathonAppDestroy(s *terraform.State) error {
+	time.Sleep(5000 * time.Millisecond)
 
 	client := testAccProvider.Meta().(*marathon.Client)
 
