@@ -424,11 +424,11 @@ func mutateResourceToApplication(d *schema.ResourceData) *marathon.Application {
 	}
 
 	if v, ok := d.GetOk("backoff_seconds"); ok {
-		application.BackoffSeconds = float32(v.(float64))
+		application.BackoffSeconds = v.(float64)
 	}
 
 	if v, ok := d.GetOk("backoff_factor"); ok {
-		application.BackoffFactor = float32(v.(float64))
+		application.BackoffFactor = v.(float64)
 	}
 
 	if v, ok := d.GetOk("cmd"); ok {
@@ -530,7 +530,7 @@ func mutateResourceToApplication(d *schema.ResourceData) *marathon.Application {
 	}
 
 	if v, ok := d.GetOk("cpus"); ok {
-		application.CPUs = float32(v.(float64))
+		application.CPUs = v.(float64)
 	}
 
 	if v, ok := d.GetOk("dependencies.#"); ok {
@@ -609,7 +609,7 @@ func mutateResourceToApplication(d *schema.ResourceData) *marathon.Application {
 	}
 
 	if v, ok := d.GetOk("mem"); ok {
-		application.Mem = float32(v.(float64))
+		application.Mem = v.(float64)
 	}
 
 	if v, ok := d.GetOk("require_ports"); ok {
@@ -620,8 +620,8 @@ func mutateResourceToApplication(d *schema.ResourceData) *marathon.Application {
 
 	if v, ok := d.GetOk("upgrade_strategy.minimum_health_capacity"); ok {
 		upgradeStrategy := &marathon.UpgradeStrategy{
-			MinimumHealthCapacity: float32(v.(float64)),
-			MaximumOverCapicity:   float32(v.(float64)),
+			MinimumHealthCapacity: v.(float64),
+			MaximumOverCapicity:   v.(float64),
 		}
 		application.UpgradeStrategy = upgradeStrategy
 
