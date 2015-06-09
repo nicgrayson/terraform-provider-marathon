@@ -28,6 +28,7 @@ resource "marathon_app" "app-create-example" {
 	instances = 1
 	mem = 100
 
+        ports = [0]
 }
 `
 
@@ -48,6 +49,7 @@ resource "marathon_app" "app-create-example" {
 	instances = 2
 	mem = 100
 
+        ports = [0]
 }
 `
 
