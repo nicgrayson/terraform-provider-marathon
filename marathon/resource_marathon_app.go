@@ -308,7 +308,7 @@ func resourceMarathonApp() *schema.Resource {
 }
 
 func resourceMarathonAppCreate(d *schema.ResourceData, meta interface{}) error {
-	c := meta.(*marathon.Client)
+	c := meta.(marathon.Marathon)
 
 	application := mutateResourceToApplication(d)
 
@@ -324,7 +324,7 @@ func resourceMarathonAppCreate(d *schema.ResourceData, meta interface{}) error {
 }
 
 func resourceMarathonAppRead(d *schema.ResourceData, meta interface{}) error {
-	c := meta.(*marathon.Client)
+	c := meta.(marathon.Marathon)
 
 	app, err := c.Application(d.Id())
 
@@ -388,7 +388,7 @@ func givenFreePortsDoesNotEqualAllocated(d *schema.ResourceData, app *marathon.A
 }
 
 func resourceMarathonAppUpdate(d *schema.ResourceData, meta interface{}) error {
-	c := meta.(*marathon.Client)
+	c := meta.(marathon.Marathon)
 
 	application := mutateResourceToApplication(d)
 
@@ -397,7 +397,7 @@ func resourceMarathonAppUpdate(d *schema.ResourceData, meta interface{}) error {
 }
 
 func resourceMarathonAppDelete(d *schema.ResourceData, meta interface{}) error {
-	c := meta.(*marathon.Client)
+	c := meta.(marathon.Marathon)
 
 	_, err := c.DeleteApplication(d.Id())
 	return err

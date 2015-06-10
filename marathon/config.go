@@ -8,7 +8,7 @@ import (
 type Config struct {
 	Url string
 
-	client *marathon.Client
+	client marathon.Marathon
 }
 
 func (c *Config) loadAndValidate() error {
@@ -19,6 +19,6 @@ func (c *Config) loadAndValidate() error {
 	config.LogOutput = os.Stdout
 
 	client, err := marathon.NewClient(config)
-	c.client = client.(*marathon.Client)
+	c.client = client
 	return err
 }
