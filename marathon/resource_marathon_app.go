@@ -2,13 +2,11 @@ package marathon
 
 import (
 	"fmt"
-	"github.com/Banno/go-marathon"
-	"github.com/hashicorp/terraform/helper/resource"
+	"github.com/gambol99/go-marathon"
 	"github.com/hashicorp/terraform/helper/schema"
 	"log"
 	"reflect"
 	"strconv"
-	"time"
 )
 
 func resourceMarathonApp() *schema.Resource {
@@ -237,7 +235,7 @@ func resourceMarathonApp() *schema.Resource {
 										Optional: true,
 									},
 									"command": &schema.Schema{
-										Type:     schema.TypeMap,
+										Type:     schema.TypeString,
 										Optional: true,
 									},
 									// incomplete computed values here
@@ -310,97 +308,36 @@ func resourceMarathonApp() *schema.Resource {
 }
 
 func resourceMarathonAppCreate(d *schema.ResourceData, meta interface{}) error {
-	c := meta.(*marathon.Client)
+	c := meta.(marathon.Marathon)
 
-	appMutable := mutateResourceToAppMutable(d)
+	application := mutateResourceToApplication(d)
 
-	app, err := c.AppCreate(appMutable)
+	err := c.CreateApplication(application, true)
 	if err != nil {
 		log.Println(err)
 		return err
 	}
 
-	d.SetId(app.Id)
-
-	// Spin until the app is finished deploying
-	stateConf := &resource.StateChangeConf{
-		Pending:        []string{"pending"},
-		Target:         "completed",
-		Refresh:        checkDeploymentsFunc(c, app),
-		Timeout:        10 * time.Minute,
-		Delay:          1 * time.Second,
-		MinTimeout:     1 * time.Second,
-		NotFoundChecks: 60,
-	}
-
-	_, err = stateConf.WaitForState()
-	if err != nil {
-		return fmt.Errorf("Timed out or something waiting for deployment of marathon app: %#v", err)
-	}
-
-	// inspect the returned App stuff and set more computed values
+	d.SetId(application.ID)
 
 	return resourceMarathonAppRead(d, meta)
 }
 
-func checkDeploymentsFunc(c *marathon.Client, app *marathon.App) resource.StateRefreshFunc {
-	return func() (interface{}, string, error) {
-		deployments, err := c.Deployments()
-		if err != nil {
-			log.Printf("Deployments endpoint returned error: %#v\n", err)
-			return nil, "failed", err
-		}
-
-		deploymentsForApp := findDeploymentsForApp(deployments, app)
-		if len(deploymentsForApp) != 0 {
-			deploymentFormat := "Deployment of %v not complete yet:\n  Deployment id: %v\n  Steps: %v\n  CurrentActions: %v\n  Steps left: %d"
-			for _, deployment := range deployments {
-				stepsLeft := deployment.TotalSteps - deployment.CurrentStep + 1
-				log.Printf(deploymentFormat, app.Id, deployment.Id, deployment.Steps, deployment.CurrentActions, stepsLeft)
-			}
-			return nil, "pending", nil
-		}
-
-		return deploymentsForApp, "completed", nil
-	}
-}
-
-func findDeploymentsForApp(deployments []marathon.Deployment, app *marathon.App) []marathon.Deployment {
-	var foundDeployments []marathon.Deployment
-
-	for _, deployment := range deployments {
-		if containsApp(deployment.AffectedApps, app.Id) {
-			foundDeployments = append(foundDeployments, deployment)
-		}
-	}
-
-	return foundDeployments
-}
-
-func containsApp(apps []string, app string) bool {
-	for _, appName := range apps {
-		if appName == app {
-			return true
-		}
-	}
-	return false
-}
-
 func resourceMarathonAppRead(d *schema.ResourceData, meta interface{}) error {
-	c := meta.(*marathon.Client)
+	c := meta.(marathon.Marathon)
 
-	app, err := c.AppRead(d.Id())
+	app, err := c.Application(d.Id())
 
 	if err != nil {
 		// Handle a deleted app
-		if err == marathon.ErrAppNotFound {
+		if err == marathon.ErrDoesNotExist {
 			d.SetId("")
 			return nil
 		}
 		return err
 	}
 
-	if app.Id == "" {
+	if app.ID == "" {
 		d.SetId("")
 	}
 
@@ -411,7 +348,7 @@ func resourceMarathonAppRead(d *schema.ResourceData, meta interface{}) error {
 	d.Set("cmd", app.Cmd)
 	// d.Set("constraints", app.Constraints)
 	// d.Set("container", app.Container)
-	d.Set("cpus", app.Cpus)
+	d.Set("cpus", app.CPUs)
 	d.Set("dependencies", app.Dependencies)
 	d.Set("env", app.Env)
 	// d.Set("health_checks", app.HealthChecks)
@@ -435,7 +372,7 @@ func resourceMarathonAppRead(d *schema.ResourceData, meta interface{}) error {
 	return nil
 }
 
-func givenFreePortsDoesNotEqualAllocated(d *schema.ResourceData, app *marathon.App) bool {
+func givenFreePortsDoesNotEqualAllocated(d *schema.ResourceData, app *marathon.Application) bool {
 	marathonPorts := make([]int, len(app.Ports))
 	for i, port := range app.Ports {
 		if port >= 10000 && port <= 20000 {
@@ -451,58 +388,27 @@ func givenFreePortsDoesNotEqualAllocated(d *schema.ResourceData, app *marathon.A
 }
 
 func resourceMarathonAppUpdate(d *schema.ResourceData, meta interface{}) error {
-	c := meta.(*marathon.Client)
+	c := meta.(marathon.Marathon)
 
-	appMutable := mutateResourceToAppMutable(d)
+	application := mutateResourceToApplication(d)
 
-	// Spin until it's not locked by a deployment or things time out.
-	stateConf := &resource.StateChangeConf{
-		Pending:    []string{""},
-		Target:     "updated",
-		Refresh:    updateAppFunc(c, &appMutable),
-		Timeout:    10 * time.Minute,
-		Delay:      1 * time.Second,
-		MinTimeout: 1 * time.Second,
-	}
-
-	_, err := stateConf.WaitForState()
-	if err != nil {
-		return fmt.Errorf("Timed out, or something: %#v", err)
-	}
-
-	time.Sleep(5 * time.Second)
-
-	return resourceMarathonAppRead(d, meta)
+	err := c.UpdateApplication(application, true)
+	return err
 }
 
 func resourceMarathonAppDelete(d *schema.ResourceData, meta interface{}) error {
-	c := meta.(*marathon.Client)
+	c := meta.(marathon.Marathon)
 
-	if err := c.AppDelete(d.Id(), true); err != nil {
-		return err
-	}
-
-	return nil
+	_, err := c.DeleteApplication(d.Id())
+	return err
 }
 
-func updateAppFunc(c *marathon.Client, appMutable *marathon.AppMutable) resource.StateRefreshFunc {
-	return func() (interface{}, string, error) {
-		appUpdateResponse, err := c.AppUpdate(*appMutable, false)
-		if err != nil {
-			log.Printf("Update Error: %#v\n", err)
-			return nil, "", err
-		}
+func mutateResourceToApplication(d *schema.ResourceData) *marathon.Application {
 
-		return appUpdateResponse, "updated", nil
-	}
-}
-
-func mutateResourceToAppMutable(d *schema.ResourceData) marathon.AppMutable {
-
-	appMutable := marathon.AppMutable{}
+	application := new(marathon.Application)
 
 	if v, ok := d.GetOk("app_id"); ok {
-		appMutable.Id = v.(string)
+		application.ID = v.(string)
 	}
 
 	if v, ok := d.GetOk("args.#"); ok {
@@ -513,20 +419,20 @@ func mutateResourceToAppMutable(d *schema.ResourceData) marathon.AppMutable {
 		}
 
 		if len(args) != 0 {
-			appMutable.Args = args
+			application.Args = args
 		}
 	}
 
 	if v, ok := d.GetOk("backoff_seconds"); ok {
-		appMutable.BackoffSeconds = v.(float64)
+		application.BackoffSeconds = v.(float64)
 	}
 
 	if v, ok := d.GetOk("backoff_factor"); ok {
-		appMutable.BackoffFactor = v.(float64)
+		application.BackoffFactor = v.(float64)
 	}
 
 	if v, ok := d.GetOk("cmd"); ok {
-		appMutable.Cmd = v.(string)
+		application.Cmd = v.(string)
 	}
 
 	if v, ok := d.GetOk("constraints.0.constraint.#"); ok {
@@ -547,17 +453,17 @@ func mutateResourceToAppMutable(d *schema.ResourceData) marathon.AppMutable {
 			}
 		}
 
-		appMutable.Constraints = constraints
+		application.Constraints = constraints
 	}
 
 	if v, ok := d.GetOk("container.0.type"); ok {
-		container := &marathon.Container{}
+		container := new(marathon.Container)
 		t := v.(string)
 
 		container.Type = t
 
 		if t == "DOCKER" {
-			docker := &marathon.Docker{}
+			docker := new(marathon.Docker)
 
 			if v, ok := d.GetOk("container.0.docker.0.image"); ok {
 				docker.Image = v.(string)
@@ -572,10 +478,10 @@ func mutateResourceToAppMutable(d *schema.ResourceData) marathon.AppMutable {
 			}
 
 			if v, ok := d.GetOk("container.0.docker.0.port_mappings.0.port_mapping.#"); ok {
-				portMappings := make([]marathon.PortMapping, v.(int))
+				portMappings := make([]*marathon.PortMapping, v.(int))
 
 				for i, _ := range portMappings {
-					portMappings[i] = marathon.PortMapping{}
+					portMappings[i] = new(marathon.PortMapping)
 
 					pmMap := d.Get(fmt.Sprintf("container.0.docker.0.port_mappings.0.port_mapping.%d", i)).(map[string]interface{})
 
@@ -600,10 +506,10 @@ func mutateResourceToAppMutable(d *schema.ResourceData) marathon.AppMutable {
 		}
 
 		if v, ok := d.GetOk("container.0.volumes.0.volume.#"); ok {
-			volumes := make([]marathon.Volume, v.(int))
+			volumes := make([]*marathon.Volume, v.(int))
 
 			for i, _ := range volumes {
-				volumes[i] = marathon.Volume{}
+				volumes[i] = new(marathon.Volume)
 
 				volumeMap := d.Get(fmt.Sprintf("container.0.volumes.0.volume.%d", i)).(map[string]interface{})
 
@@ -620,11 +526,11 @@ func mutateResourceToAppMutable(d *schema.ResourceData) marathon.AppMutable {
 			container.Volumes = volumes
 		}
 
-		appMutable.Container = container
+		application.Container = container
 	}
 
 	if v, ok := d.GetOk("cpus"); ok {
-		appMutable.Cpus = v.(float64)
+		application.CPUs = v.(float64)
 	}
 
 	if v, ok := d.GetOk("dependencies.#"); ok {
@@ -635,7 +541,7 @@ func mutateResourceToAppMutable(d *schema.ResourceData) marathon.AppMutable {
 		}
 
 		if len(dependencies) != 0 {
-			appMutable.Dependencies = dependencies
+			application.Dependencies = dependencies
 		}
 	}
 
@@ -647,21 +553,19 @@ func mutateResourceToAppMutable(d *schema.ResourceData) marathon.AppMutable {
 			env[k] = v.(string)
 		}
 
-		appMutable.Env = env
+		application.Env = env
 	}
 
 	if v, ok := d.GetOk("health_checks.0.health_check.#"); ok {
-		healthChecks := make([]marathon.HealthCheck, v.(int))
+		healthChecks := make([]*marathon.HealthCheck, v.(int))
 
 		for i, _ := range healthChecks {
-			healthCheck := marathon.HealthCheck{}
+			healthCheck := new(marathon.HealthCheck)
 			mapStruct := d.Get("health_checks.0.health_check." + strconv.Itoa(i)).(map[string]interface{})
 
-			if prop, ok := d.GetOk("health_checks.0.health_check." + strconv.Itoa(i) + ".command.value"); ok {
-				command := make(map[string]string)
-				command["value"] = prop.(string)
-
-				healthCheck.Command = command
+			if prop, ok := d.GetOk("health_checks.0.health_check." + strconv.Itoa(i) + ".command"); ok {
+				healthCheck.Command = prop.(string)
+				healthCheck.Protocol = "COMMAND"
 			}
 
 			if prop, ok := mapStruct["grace_period_seconds"]; ok {
@@ -695,29 +599,29 @@ func mutateResourceToAppMutable(d *schema.ResourceData) marathon.AppMutable {
 			healthChecks[i] = healthCheck
 		}
 
-		appMutable.HealthChecks = healthChecks
+		application.HealthChecks = healthChecks
 	}
 
 	if v, ok := d.GetOk("instances"); ok {
-		appMutable.Instances = v.(int)
+		application.Instances = v.(int)
 	}
 
 	if v, ok := d.GetOk("mem"); ok {
-		appMutable.Mem = v.(float64)
+		application.Mem = v.(float64)
 	}
 
 	if v, ok := d.GetOk("require_ports"); ok {
-		appMutable.RequirePorts = v.(bool)
+		application.RequirePorts = v.(bool)
 	}
 
-	appMutable.Ports = getPorts(d)
+	application.Ports = getPorts(d)
 
 	if v, ok := d.GetOk("upgrade_strategy.minimum_health_capacity"); ok {
 		upgradeStrategy := &marathon.UpgradeStrategy{
 			MinimumHealthCapacity: v.(float64),
 			MaximumOverCapicity:   v.(float64),
 		}
-		appMutable.UpgradeStrategy = upgradeStrategy
+		application.UpgradeStrategy = upgradeStrategy
 
 	}
 
@@ -729,11 +633,11 @@ func mutateResourceToAppMutable(d *schema.ResourceData) marathon.AppMutable {
 		}
 
 		if len(uris) != 0 {
-			appMutable.Uris = uris
+			application.Uris = uris
 		}
 	}
 
-	return appMutable
+	return application
 }
 
 func getPorts(d *schema.ResourceData) []int {
