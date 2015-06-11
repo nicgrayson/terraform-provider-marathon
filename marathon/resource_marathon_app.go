@@ -88,6 +88,10 @@ func resourceMarathonApp() *schema.Resource {
 							Optional: true,
 							Elem: &schema.Resource{
 								Schema: map[string]*schema.Schema{
+									"force_pull_image": &schema.Schema{
+										Type:     schema.TypeBool,
+										Optional: true,
+									},
 									"image": &schema.Schema{
 										Type:     schema.TypeString,
 										Required: true,
@@ -467,6 +471,10 @@ func mutateResourceToApplication(d *schema.ResourceData) *marathon.Application {
 
 			if v, ok := d.GetOk("container.0.docker.0.image"); ok {
 				docker.Image = v.(string)
+			}
+
+			if v, ok := d.GetOk("container.0.docker.0.force_pull_image"); ok {
+				docker.ForcePullImage = v.(bool)
 			}
 
 			if v, ok := d.GetOk("container.0.docker.0.network"); ok {
