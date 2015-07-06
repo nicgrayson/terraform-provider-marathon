@@ -28,6 +28,10 @@ resource "marathon_app" "app-create-example" {
 	instances = 1
 	mem = 100
 
+        upgrade_strategy {
+          minimum_health_capacity = 0.5
+        }
+
         ports = [0]
 }
 `
