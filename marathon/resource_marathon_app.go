@@ -17,6 +17,14 @@ func resourceMarathonApp() *schema.Resource {
 		Delete: resourceMarathonAppDelete,
 
 		Schema: map[string]*schema.Schema{
+			"accepted_resource_roles": &schema.Schema{
+				Type:     schema.TypeList,
+				Optional: true,
+				ForceNew: false,
+				Elem: &schema.Schema{
+					Type: schema.TypeString,
+				},
+			},
 			"app_id": &schema.Schema{
 				Type:     schema.TypeString,
 				Required: true,
@@ -346,6 +354,7 @@ func resourceMarathonAppRead(d *schema.ResourceData, meta interface{}) error {
 	}
 
 	// App Mutable
+	d.Set("accepted_resource_roles", app.AcceptedResourceRoles)
 	d.Set("args", app.Args)
 	d.Set("backoff_seconds", app.BackoffSeconds)
 	d.Set("backoff_factor", app.BackoffFactor)
@@ -410,6 +419,18 @@ func resourceMarathonAppDelete(d *schema.ResourceData, meta interface{}) error {
 func mutateResourceToApplication(d *schema.ResourceData) *marathon.Application {
 
 	application := new(marathon.Application)
+
+	if v, ok := d.GetOk("accepted_resource_roles.#"); ok {
+		accepted_resource_roles := make([]string, v.(int))
+
+		for i, _ := range accepted_resource_roles {
+			accepted_resource_roles[i] = d.Get("accepted_resource_roles." + strconv.Itoa(i)).(string)
+		}
+
+		if len(accepted_resource_roles) != 0 {
+			application.AcceptedResourceRoles = accepted_resource_roles
+		}
+	}
 
 	if v, ok := d.GetOk("app_id"); ok {
 		application.ID = v.(string)
