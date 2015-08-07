@@ -247,8 +247,17 @@ func resourceMarathonApp() *schema.Resource {
 										Optional: true,
 									},
 									"command": &schema.Schema{
-										Type:     schema.TypeString,
+										Type:     schema.TypeList,
 										Optional: true,
+										ForceNew: false,
+										Elem: &schema.Resource{
+											Schema: map[string]*schema.Schema{
+												"value": &schema.Schema{
+													Type:     schema.TypeString,
+													Optional: true,
+												},
+											},
+										},
 									},
 									// incomplete computed values here
 								},
@@ -592,8 +601,8 @@ func mutateResourceToApplication(d *schema.ResourceData) *marathon.Application {
 			healthCheck := new(marathon.HealthCheck)
 			mapStruct := d.Get("health_checks.0.health_check." + strconv.Itoa(i)).(map[string]interface{})
 
-			if prop, ok := d.GetOk("health_checks.0.health_check." + strconv.Itoa(i) + ".command"); ok {
-				healthCheck.Command = prop.(string)
+			if prop, ok := d.GetOk("health_checks.0.health_check." + strconv.Itoa(i) + ".command.value"); ok {
+				healthCheck.Command = &marathon.Command{Value: prop.(string)}
 				healthCheck.Protocol = "COMMAND"
 			}
 
