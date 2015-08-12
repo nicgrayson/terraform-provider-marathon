@@ -293,7 +293,7 @@ func resourceMarathonApp() *schema.Resource {
 				ForceNew: false,
 			},
 			"upgrade_strategy": &schema.Schema{
-				Type:     schema.TypeMap,
+				Type:     schema.TypeList,
 				Optional: true,
 				ForceNew: false,
 				Elem: &schema.Resource{
@@ -654,14 +654,17 @@ func mutateResourceToApplication(d *schema.ResourceData) *marathon.Application {
 
 	application.Ports = getPorts(d)
 
-	if v, ok := d.GetOk("upgrade_strategy.minimum_health_capacity"); ok {
-		upgradeStrategy := &marathon.UpgradeStrategy{
-			MinimumHealthCapacity: v.(float64),
-			MaximumOverCapicity:   v.(float64),
-		}
-		application.UpgradeStrategy = upgradeStrategy
+	upgradeStrategy := &marathon.UpgradeStrategy{}
 
+	if v, ok := d.GetOk("upgrade_strategy.0.minimum_health_capacity"); ok {
+		upgradeStrategy.MinimumHealthCapacity = v.(float64)
 	}
+
+	if v, ok := d.GetOk("upgrade_strategy.0.maximum_over_capacity"); ok {
+		upgradeStrategy.MaximumOverCapicity = v.(float64)
+	}
+
+	application.UpgradeStrategy = upgradeStrategy
 
 	if v, ok := d.GetOk("uris.#"); ok {
 		uris := make([]string, v.(int))
