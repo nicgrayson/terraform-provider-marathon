@@ -20,7 +20,6 @@ resource "marathon_app" "app-create-example" {
 	container {
 		docker {
 			image = "python:3"
-                        privileged = true
                 }
 	}
 
@@ -45,7 +44,6 @@ resource "marathon_app" "app-create-example" {
 	container {
 		docker {
 			image = "python:3"
-                        privileged = false
                 }
 	}
 
