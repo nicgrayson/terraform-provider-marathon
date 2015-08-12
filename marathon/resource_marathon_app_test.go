@@ -20,13 +20,16 @@ resource "marathon_app" "app-create-example" {
 	container {
 		docker {
 			image = "python:3"
-                        privileged = true
                 }
 	}
 
 	cpus = "0.01"
 	instances = 1
 	mem = 100
+
+        upgrade_strategy {
+          minimum_health_capacity = 0.5
+        }
 
         ports = [0]
 }
@@ -41,7 +44,6 @@ resource "marathon_app" "app-create-example" {
 	container {
 		docker {
 			image = "python:3"
-                        privileged = false
                 }
 	}
 
