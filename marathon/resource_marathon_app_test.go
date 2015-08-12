@@ -13,19 +13,18 @@ import (
 
 const testAccCheckMarathonAppConfig_basic = `
 resource "marathon_app" "app-create-example" {
-	 app_id= "/app-create-example"
-
+	app_id= "/app-create-example"
 	cmd = "env && python3 -m http.server $PORT0"
-
 	container {
 		docker {
 			image = "python:3"
                 }
 	}
-
 	cpus = "0.01"
 	instances = 1
 	mem = 100
+
+	accepted_resource_roles = ["*"]
 
         upgrade_strategy {
           minimum_health_capacity = 0.5
@@ -38,18 +37,21 @@ resource "marathon_app" "app-create-example" {
 const testAccCheckMarathonAppConfig_update = `
 resource "marathon_app" "app-create-example" {
 	app_id = "/app-create-example"
-
 	cmd = "env && python3 -m http.server $PORT0"
-
 	container {
 		docker {
 			image = "python:3"
                 }
 	}
-
 	cpus = "0.01"
 	instances = 2
 	mem = 100
+
+        accepted_resource_roles = ["*"]
+
+        upgrade_strategy {
+          minimum_health_capacity = 0.5
+        }
 
         ports = [0]
 }
