@@ -16,7 +16,7 @@ func Provider() terraform.ResourceProvider {
 			},
 			"request_timeout": &schema.Schema{
 				Type:        schema.TypeInt,
-				Required:    true,
+				Optional:    true,
 				Default:     10,
 				Description: "'Request Timeout",
 			},
