@@ -14,6 +14,12 @@ func Provider() terraform.ResourceProvider {
 				DefaultFunc: schema.EnvDefaultFunc("MARATHON_URL", nil),
 				Description: "Marathon's Base HTTP URL",
 			},
+			"request_timeout": &schema.Schema{
+				Type:        schema.TypeInt,
+				Required:    true,
+				Default:     10,
+				Description: "'Request Timeout",
+			},
 		},
 
 		ResourcesMap: map[string]*schema.Resource{
@@ -26,7 +32,8 @@ func Provider() terraform.ResourceProvider {
 
 func providerConfigure(d *schema.ResourceData) (interface{}, error) {
 	config := Config{
-		Url: d.Get("url").(string),
+		Url:            d.Get("url").(string),
+		RequestTimeout: d.Get("request_timeout").(int),
 	}
 
 	if err := config.loadAndValidate(); err != nil {
