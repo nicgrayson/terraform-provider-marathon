@@ -3,6 +3,7 @@ package marathon
 import (
 	"github.com/hashicorp/terraform/helper/schema"
 	"github.com/hashicorp/terraform/terraform"
+	"time"
 )
 
 func Provider() terraform.ResourceProvider {
@@ -13,6 +14,18 @@ func Provider() terraform.ResourceProvider {
 				Required:    true,
 				DefaultFunc: schema.EnvDefaultFunc("MARATHON_URL", nil),
 				Description: "Marathon's Base HTTP URL",
+			},
+			"request_timeout": &schema.Schema{
+				Type:        schema.TypeInt,
+				Optional:    true,
+				Default:     10,
+				Description: "'Request Timeout",
+			},
+			"deployment_timeout": &schema.Schema{
+				Type:        schema.TypeInt,
+				Optional:    true,
+				Default:     600,
+				Description: "'Deployment Timeout",
 			},
 		},
 
@@ -26,7 +39,9 @@ func Provider() terraform.ResourceProvider {
 
 func providerConfigure(d *schema.ResourceData) (interface{}, error) {
 	config := Config{
-		Url: d.Get("url").(string),
+		Url:                      d.Get("url").(string),
+		RequestTimeout:           d.Get("request_timeout").(int),
+		DefaultDeploymentTimeout: time.Duration(d.Get("deployment_timeout").(int)) * time.Second,
 	}
 
 	if err := config.loadAndValidate(); err != nil {
