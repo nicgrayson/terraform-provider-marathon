@@ -87,7 +87,7 @@ func resourceMarathonApp() *schema.Resource {
 			},
 			"container": &schema.Schema{
 				Type:     schema.TypeList,
-				Required: true,
+				Optional: true,
 				ForceNew: false,
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
