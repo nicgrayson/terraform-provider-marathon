@@ -8,6 +8,8 @@ $ go get github.com/Banno/terraform-provider-marathon
 ## Usage
 
 ### Provider Configuration
+Use a [tfvar file](https://www.terraform.io/intro/getting-started/variables.html) or set the ENV variable
+
 ```bash
 $ export TF_VAR_marathon_url="http://marthon.domain.tld:8080"
 ```
@@ -61,6 +63,6 @@ $ go install
 
 ### Test
 ```bash
-$ export TF_VAR_marathon_url="http://marthon.domain.tld:8080"
+$ export MARATHON_URL="http://marthon.domain.tld:8080"
 $ ./test.sh
 ```
