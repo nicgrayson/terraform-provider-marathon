@@ -52,7 +52,7 @@ resource "marathon_app" "docker-hello-world" {
 
 ### Full Example
 
-[terraform file](test/app-create-example.tf)
+[terraform file](test/example.tf)
 
 ## Development
 
