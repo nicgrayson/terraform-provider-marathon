@@ -1,4 +1,4 @@
-// use terraform.tfvars
+#must set this in env var or tfvar
 variable "marathon_url" {}
 
 provider "marathon" {
@@ -23,7 +23,6 @@ resource "marathon_app" "app-create-example" {
   }
 
   container {
-    // finish this
     type = "DOCKER"
     docker {
       image = "python:3"
@@ -92,5 +91,4 @@ resource "marathon_app" "app-create-example" {
   upgrade_strategy {
     minimum_health_capacity = "0.5"
   }
-
 }
