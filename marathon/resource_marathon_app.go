@@ -333,7 +333,7 @@ func resourceMarathonAppCreate(d *schema.ResourceData, meta interface{}) error {
 
 	application := mutateResourceToApplication(d)
 
-	err := c.CreateApplication(application, true)
+	_, err := c.CreateApplication(application, true)
 	if err != nil {
 		log.Println(err)
 		return err
@@ -414,7 +414,7 @@ func resourceMarathonAppUpdate(d *schema.ResourceData, meta interface{}) error {
 
 	application := mutateResourceToApplication(d)
 
-	err := c.UpdateApplication(application, true)
+	_, err := c.UpdateApplication(application, true)
 	return err
 }
 
