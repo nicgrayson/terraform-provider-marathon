@@ -333,13 +333,20 @@ func resourceMarathonAppCreate(d *schema.ResourceData, meta interface{}) error {
 
 	application := mutateResourceToApplication(d)
 
-	_, err := c.CreateApplication(application, true)
+	application, err := c.CreateApplication(application, false)
 	if err != nil {
 		log.Println(err)
 		return err
 	}
-
+	d.Partial(true)
 	d.SetId(application.ID)
+
+	err = c.WaitOnApplication(application.ID, 0)
+	if err != nil {
+		log.Println(err)
+		return err
+	}
+	d.Partial(false)
 
 	return resourceMarathonAppRead(d, meta)
 }
