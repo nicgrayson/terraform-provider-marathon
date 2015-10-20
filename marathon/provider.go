@@ -48,5 +48,5 @@ func providerConfigure(d *schema.ResourceData) (interface{}, error) {
 		return nil, err
 	}
 
-	return config.client, nil
+	return config, nil
 }

@@ -329,11 +329,12 @@ func resourceMarathonApp() *schema.Resource {
 }
 
 func resourceMarathonAppCreate(d *schema.ResourceData, meta interface{}) error {
-	c := meta.(marathon.Marathon)
+	config := meta.(Config)
+	client := config.Client
 
 	application := mutateResourceToApplication(d)
 
-	application, err := c.CreateApplication(application, false)
+	application, err := client.CreateApplication(application)
 	if err != nil {
 		log.Println(err)
 		return err
@@ -342,7 +343,7 @@ func resourceMarathonAppCreate(d *schema.ResourceData, meta interface{}) error {
 	d.SetId(application.ID)
 	setSchemaFieldsForApp(application, d)
 
-	err = c.WaitOnApplication(application.ID, 0)
+	err = client.WaitOnApplication(application.ID, config.DefaultDeploymentTimeout)
 	if err != nil {
 		log.Println(err)
 		return err
@@ -353,9 +354,10 @@ func resourceMarathonAppCreate(d *schema.ResourceData, meta interface{}) error {
 }
 
 func resourceMarathonAppRead(d *schema.ResourceData, meta interface{}) error {
-	c := meta.(marathon.Marathon)
+	config := meta.(Config)
+	client := config.Client
 
-	app, err := c.Application(d.Id())
+	app, err := client.Application(d.Id())
 
 	if err != nil {
 		// Handle a deleted app
@@ -461,18 +463,29 @@ func givenFreePortsDoesNotEqualAllocated(d *schema.ResourceData, app *marathon.A
 }
 
 func resourceMarathonAppUpdate(d *schema.ResourceData, meta interface{}) error {
-	c := meta.(marathon.Marathon)
+	config := meta.(Config)
+	client := config.Client
 
 	application := mutateResourceToApplication(d)
 
-	_, err := c.UpdateApplication(application, true)
+	deploymentId, err := client.UpdateApplication(application)
+	if err != nil {
+		return err
+	}
+
+	err = client.WaitOnDeployment(deploymentId.DeploymentID, config.DefaultDeploymentTimeout)
 	return err
 }
 
 func resourceMarathonAppDelete(d *schema.ResourceData, meta interface{}) error {
-	c := meta.(marathon.Marathon)
+	config := meta.(Config)
+	client := config.Client
 
-	_, err := c.DeleteApplication(d.Id())
+	deploymentId, err := client.DeleteApplication(d.Id())
+	if err != nil {
+		return err
+	}
+	err = client.WaitOnDeployment(deploymentId.DeploymentID, config.DefaultDeploymentTimeout)
 	return err
 }
 

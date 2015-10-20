@@ -11,19 +11,18 @@ type Config struct {
 	RequestTimeout           int
 	DefaultDeploymentTimeout time.Duration
 
-	client marathon.Marathon
+	Client marathon.Marathon
 }
 
 func (c *Config) loadAndValidate() error {
 
 	// this needs to return an err as well.
-	config := marathon.NewDefaultConfig()
-	config.URL = c.Url
-	config.RequestTimeout = c.RequestTimeout
-	config.DefaultDeploymentTimeout = c.DefaultDeploymentTimeout
-	config.LogOutput = os.Stdout
+	marathonConfig := marathon.NewDefaultConfig()
+	marathonConfig.URL = c.Url
+	marathonConfig.RequestTimeout = c.RequestTimeout
+	marathonConfig.LogOutput = os.Stdout
 
-	client, err := marathon.NewClient(config)
-	c.client = client
+	client, err := marathon.NewClient(marathonConfig)
+	c.Client = client
 	return err
 }
