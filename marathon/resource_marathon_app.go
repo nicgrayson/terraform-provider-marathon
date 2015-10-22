@@ -460,7 +460,25 @@ func setSchemaFieldsForApp(app *marathon.Application, d *schema.ResourceData) {
 	d.Set("env", app.Env)
 	d.SetPartial("env")
 
-	// d.Set("health_checks", app.HealthChecks)
+	if len(app.HealthChecks) > 0 {
+		healthChecks := make([]map[string]interface{}, len(app.HealthChecks))
+		for idx, healthCheck := range app.HealthChecks {
+			hMap := make(map[string]interface{})
+			if healthCheck.Command != nil {
+				hMap["command"] = map[string]string{"value": healthCheck.Command.Value}
+			}
+			hMap["grace_period_seconds"] = healthCheck.GracePeriodSeconds
+			hMap["interval_seconds"] = healthCheck.IntervalSeconds
+			hMap["max_consecutive_failures"] = healthCheck.MaxConsecutiveFailures
+			hMap["path"] = healthCheck.Path
+			hMap["port_index"] = healthCheck.PortIndex
+			hMap["timeout_seconds"] = healthCheck.TimeoutSeconds
+			healthChecks[idx] = hMap
+		}
+		d.Set("health_checks", []interface{}{map[string]interface{}{"health_check": healthChecks}})
+	} else {
+		d.Set("health_checks", make([]interface{}, 0))
+	}
 	d.SetPartial("health_checks")
 
 	d.Set("instances", app.Instances)
