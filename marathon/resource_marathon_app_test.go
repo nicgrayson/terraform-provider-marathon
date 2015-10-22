@@ -2,6 +2,9 @@ package marathon
 
 import (
 	"fmt"
+	"io/ioutil"
+	"log"
+	"regexp"
 	"time"
 
 	"github.com/gambol99/go-marathon"
@@ -11,51 +14,21 @@ import (
 	"testing"
 )
 
-const testAccCheckMarathonAppConfig_basic = `
-resource "marathon_app" "app-create-example" {
-	app_id= "/app-create-example"
-	cmd = "env && python3 -m http.server $PORT0"
-	container {
-		docker {
-			image = "python:3"
-                }
+func readExampleAppConfiguration() string {
+	bytes, err := ioutil.ReadFile("../test/example.tf")
+	if err != nil {
+		log.Fatal(err)
 	}
-	cpus = "0.01"
-	instances = 1
-	mem = 100
 
-	accepted_resource_roles = ["*"]
-
-        upgrade_strategy {
-          minimum_health_capacity = 0.5
-        }
-
-        ports = [0]
+	return string(bytes)
 }
-`
 
-const testAccCheckMarathonAppConfig_update = `
-resource "marathon_app" "app-create-example" {
-	app_id = "/app-create-example"
-	cmd = "env && python3 -m http.server $PORT0"
-	container {
-		docker {
-			image = "python:3"
-                }
-	}
-	cpus = "0.01"
-	instances = 2
-	mem = 100
-
-        accepted_resource_roles = ["*"]
-
-        upgrade_strategy {
-          minimum_health_capacity = 0.5
-        }
-
-        ports = [0]
+func readExampleAppConfigurationAndUpdateInstanceCount(count int) string {
+	config := readExampleAppConfiguration()
+	re := regexp.MustCompile("instances = \\d+")
+	updated := re.ReplaceAllString(config, fmt.Sprintf("instances = %d", count))
+	return updated
 }
-`
 
 func TestAccMarathonApp_basic(t *testing.T) {
 
@@ -90,14 +63,14 @@ func TestAccMarathonApp_basic(t *testing.T) {
 		CheckDestroy: testAccCheckMarathonAppDestroy,
 		Steps: []resource.TestStep{
 			resource.TestStep{
-				Config: testAccCheckMarathonAppConfig_basic,
+				Config: readExampleAppConfiguration(),
 				Check: resource.ComposeTestCheckFunc(
 					testAccReadApp("marathon_app.app-create-example", &a),
 					testCheckCreate(&a),
 				),
 			},
 			resource.TestStep{
-				Config: testAccCheckMarathonAppConfig_update,
+				Config: readExampleAppConfigurationAndUpdateInstanceCount(2),
 				Check: resource.ComposeTestCheckFunc(
 					testAccReadApp("marathon_app.app-create-example", &a),
 					testCheckUpdate(&a),
