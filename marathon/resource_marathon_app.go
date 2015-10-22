@@ -381,7 +381,6 @@ func setSchemaFieldsForApp(app *marathon.Application, d *schema.ResourceData) {
 	d.Set("app_id", app.ID)
 	d.SetPartial("app_id")
 
-	// App Mutable
 	d.Set("accepted_resource_roles", app.AcceptedResourceRoles)
 	d.SetPartial("accepted_resource_roles")
 
@@ -397,7 +396,17 @@ func setSchemaFieldsForApp(app *marathon.Application, d *schema.ResourceData) {
 	d.Set("cmd", app.Cmd)
 	d.SetPartial("cmd")
 
-	// d.Set("constraints", app.Constraints)
+	cMaps := make([]map[string]string, len(app.Constraints))
+	for idx, constraint := range app.Constraints {
+		cMap := make(map[string]string)
+		cMap["attribute"] = constraint[0]
+		cMap["operation"] = constraint[1]
+		if len(constraint) > 2 {
+			cMap["parameter"] = constraint[2]
+		}
+		cMaps[idx] = cMap
+	}
+	d.Set("constraints", cMaps)
 	d.SetPartial("constraints")
 
 	// d.Set("container", app.Container)
