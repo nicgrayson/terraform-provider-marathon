@@ -109,6 +109,10 @@ func resourceMarathonApp() *schema.Resource {
 										Default:  "HOST",
 										Optional: true,
 									},
+									"parameters": &schema.Schema{
+										Type:     schema.TypeMap,
+										Optional: true,
+									},
 									"privileged": &schema.Schema{
 										Type:     schema.TypeBool,
 										Optional: true,
@@ -443,6 +447,11 @@ func setSchemaFieldsForApp(app *marathon.Application, d *schema.ResourceData) {
 			dockerMap["image"] = docker.Image
 			dockerMap["force_pull_image"] = docker.ForcePullImage
 			dockerMap["network"] = docker.Network
+			parametersMap := make(map[string]interface{}, len(docker.Parameters))
+			for _, p := range docker.Parameters {
+				parametersMap[p.Key] = p.Value
+			}
+			dockerMap["parameters"] = parametersMap
 			dockerMap["privileged"] = docker.Privileged
 
 			if len(docker.PortMappings) > 0 {
@@ -680,6 +689,17 @@ func mutateResourceToApplication(d *schema.ResourceData) *marathon.Application {
 
 			if v, ok := d.GetOk("container.0.docker.0.network"); ok {
 				docker.Network = v.(string)
+			}
+
+			if v, ok := d.GetOk("container.0.docker.0.parameters"); ok {
+				parametersMap := v.(map[string]interface{})
+				parameters := make([]*marathon.Parameters, len(parametersMap))
+				i := 0
+				for k, v := range parametersMap {
+					parameters[i] = &marathon.Parameters{Key: k, Value: v.(string)}
+					i++
+				}
+				docker.Parameters = parameters
 			}
 
 			if v, ok := d.GetOk("container.0.docker.0.privileged"); ok {

@@ -19,6 +19,9 @@ resource "marathon_app" "app-create-example" {
     docker {
       image = "python:3"
       network = "BRIDGE"
+      parameters {
+        hostname = "a.corp.org"
+      }
       port_mappings {
         port_mapping {
           container_port = 8080
