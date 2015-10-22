@@ -106,6 +106,7 @@ func resourceMarathonApp() *schema.Resource {
 									},
 									"network": &schema.Schema{
 										Type:     schema.TypeString,
+										Default:  "HOST",
 										Optional: true,
 									},
 									"privileged": &schema.Schema{
