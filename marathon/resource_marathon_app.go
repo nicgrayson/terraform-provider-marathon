@@ -139,6 +139,7 @@ func resourceMarathonApp() *schema.Resource {
 															},
 															"protocol": &schema.Schema{
 																Type:     schema.TypeString,
+																Default:  "tcp",
 																Optional: true,
 															},
 														},
