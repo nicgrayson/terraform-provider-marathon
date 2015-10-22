@@ -222,30 +222,41 @@ func resourceMarathonApp() *schema.Resource {
 								Schema: map[string]*schema.Schema{
 									"protocol": &schema.Schema{
 										Type:     schema.TypeString,
+										Default:  "HTTP",
 										Optional: true,
 									},
 									"path": &schema.Schema{
 										Type:     schema.TypeString,
+										Default:  "/",
 										Optional: true,
 									},
 									"grace_period_seconds": &schema.Schema{
 										Type:     schema.TypeInt,
+										Default:  300,
 										Optional: true,
 									},
 									"interval_seconds": &schema.Schema{
 										Type:     schema.TypeInt,
+										Default:  60,
 										Optional: true,
 									},
 									"port_index": &schema.Schema{
 										Type:     schema.TypeInt,
+										Default:  0,
 										Optional: true,
 									},
 									"timeout_seconds": &schema.Schema{
 										Type:     schema.TypeInt,
+										Default:  20,
 										Optional: true,
 									},
+									// "ignore_http_1xx": &schema.Schema{
+									// 	Type:     schema.TypeBool,
+									// 	Optional: true,
+									// },
 									"max_consecutive_failures": &schema.Schema{
 										Type:     schema.TypeInt,
+										Default:  3,
 										Optional: true,
 									},
 									"command": &schema.Schema{
@@ -480,13 +491,14 @@ func setSchemaFieldsForApp(app *marathon.Application, d *schema.ResourceData) {
 		for idx, healthCheck := range app.HealthChecks {
 			hMap := make(map[string]interface{})
 			if healthCheck.Command != nil {
-				hMap["command"] = map[string]string{"value": healthCheck.Command.Value}
+				hMap["command"] = []interface{}{map[string]string{"value": healthCheck.Command.Value}}
 			}
 			hMap["grace_period_seconds"] = healthCheck.GracePeriodSeconds
 			hMap["interval_seconds"] = healthCheck.IntervalSeconds
 			hMap["max_consecutive_failures"] = healthCheck.MaxConsecutiveFailures
 			hMap["path"] = healthCheck.Path
 			hMap["port_index"] = healthCheck.PortIndex
+			hMap["protocol"] = healthCheck.Protocol
 			hMap["timeout_seconds"] = healthCheck.TimeoutSeconds
 			healthChecks[idx] = hMap
 		}
@@ -759,9 +771,27 @@ func mutateResourceToApplication(d *schema.ResourceData) *marathon.Application {
 			healthCheck := new(marathon.HealthCheck)
 			mapStruct := d.Get("health_checks.0.health_check." + strconv.Itoa(i)).(map[string]interface{})
 
-			if prop, ok := d.GetOk("health_checks.0.health_check." + strconv.Itoa(i) + ".command.value"); ok {
-				healthCheck.Command = &marathon.Command{Value: prop.(string)}
+			commands := mapStruct["command"].([]interface{})
+			if len(commands) > 0 {
+				commandMap := commands[0].(map[string]interface{})
+				healthCheck.Command = &marathon.Command{Value: commandMap["value"].(string)}
 				healthCheck.Protocol = "COMMAND"
+			} else {
+				if prop, ok := mapStruct["path"]; ok {
+					healthCheck.Path = prop.(string)
+				}
+
+				if prop, ok := mapStruct["port_index"]; ok {
+					healthCheck.PortIndex = prop.(int)
+				}
+
+				if prop, ok := mapStruct["protocol"]; ok {
+					healthCheck.Protocol = prop.(string)
+				}
+
+				if prop, ok := mapStruct["timeout_seconds"]; ok {
+					healthCheck.TimeoutSeconds = prop.(int)
+				}
 			}
 
 			if prop, ok := mapStruct["grace_period_seconds"]; ok {
@@ -776,26 +806,12 @@ func mutateResourceToApplication(d *schema.ResourceData) *marathon.Application {
 				healthCheck.MaxConsecutiveFailures = prop.(int)
 			}
 
-			if prop, ok := mapStruct["path"]; ok {
-				healthCheck.Path = prop.(string)
-			}
-
-			if prop, ok := mapStruct["port_index"]; ok {
-				healthCheck.PortIndex = prop.(int)
-			}
-
-			if prop, ok := mapStruct["protocol"]; ok {
-				healthCheck.Protocol = prop.(string)
-			}
-
-			if prop, ok := mapStruct["timeout_seconds"]; ok {
-				healthCheck.TimeoutSeconds = prop.(int)
-			}
-
 			healthChecks[i] = healthCheck
 		}
 
 		application.HealthChecks = healthChecks
+	} else {
+		application.HealthChecks = make([]*marathon.HealthCheck, 0)
 	}
 
 	if v, ok := d.GetOk("instances"); ok {
