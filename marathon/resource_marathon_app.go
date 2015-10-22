@@ -409,7 +409,46 @@ func setSchemaFieldsForApp(app *marathon.Application, d *schema.ResourceData) {
 	d.Set("constraints", cMaps)
 	d.SetPartial("constraints")
 
-	// d.Set("container", app.Container)
+	if app.Container != nil {
+		container := app.Container
+
+		containerMap := make(map[string]interface{})
+		containerMap["type"] = container.Type
+
+		if container.Type == "DOCKER" {
+			docker := container.Docker
+			dockerMap := make(map[string]interface{})
+			containerMap["docker"] = []interface{}{dockerMap}
+
+			dockerMap["image"] = docker.Image
+			dockerMap["force_pull_image"] = docker.ForcePullImage
+			dockerMap["network"] = docker.Network
+			dockerMap["privileged"] = docker.Privileged
+
+			portMappings := make([]map[string]interface{}, len(docker.PortMappings))
+			dockerMap["port_mappings"] = []interface{}{map[string]interface{}{"port_mapping": portMappings}}
+			for idx, portMapping := range docker.PortMappings {
+				pmMap := make(map[string]interface{})
+				pmMap["container_port"] = portMapping.ContainerPort
+				pmMap["host_port"] = portMapping.HostPort
+				// pmMap["service_port"] = portMapping.ServicePort
+				pmMap["protocol"] = portMapping.Protocol
+				portMappings[idx] = pmMap
+			}
+
+		}
+
+		volumes := make([]map[string]interface{}, len(container.Volumes))
+		containerMap["volumes"] = []interface{}{map[string]interface{}{"volume": volumes}}
+		for idx, volume := range container.Volumes {
+			volumeMap := make(map[string]interface{})
+			volumeMap["container_path"] = volume.ContainerPath
+			volumeMap["host_path"] = volume.HostPath
+			volumeMap["mode"] = volume.Mode
+			volumes[idx] = volumeMap
+		}
+		d.Set("container", []interface{}{containerMap})
+	}
 	d.SetPartial("container")
 
 	d.Set("cpus", app.CPUs)
