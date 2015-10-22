@@ -89,7 +89,7 @@ resource "marathon_app" "app-create-example" {
   mem = 50
   ports = [0]
 
-  # upgrade_strategy {
-  #   minimum_health_capacity = "0.5"
-  # }
+  upgrade_strategy {
+    minimum_health_capacity = "0.5"
+  }
 }

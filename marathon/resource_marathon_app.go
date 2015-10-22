@@ -504,7 +504,16 @@ func setSchemaFieldsForApp(app *marathon.Application, d *schema.ResourceData) {
 	d.Set("require_ports", app.RequirePorts)
 	d.SetPartial("require_ports")
 
-	// d.Set("upgrade_strategy", app.UpgradeStrategy)
+	if app.UpgradeStrategy != nil {
+		usMap := make(map[string]interface{})
+		usMap["minimum_health_capacity"] = app.UpgradeStrategy.MinimumHealthCapacity
+		usMap["maximum_over_capacity"] = app.UpgradeStrategy.MaximumOverCapacity
+		d.Set("upgrade_strategy", []interface{}{usMap})
+	} else {
+		d.Set("upgrade_strategy", make([]interface{}, 0))
+	}
+	d.SetPartial("upgrade_strategy")
+
 	d.Set("uris", app.Uris)
 	d.SetPartial("uris")
 
