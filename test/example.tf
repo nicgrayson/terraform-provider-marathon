@@ -1,15 +1,7 @@
-#must set this in env var or tfvar
-variable "marathon_url" {}
-
-provider "marathon" {
-  url = "${var.marathon_url}"
-  # deployment_timeout = 5
-}
-
 resource "marathon_app" "app-create-example" {
   app_id = "/app-create-example"
 
-  cmd = "env && python3 -m http.server $PORT0"
+  cmd = "env && python3 -m http.server 8080"
 
   constraints {
     constraint {
@@ -24,7 +16,6 @@ resource "marathon_app" "app-create-example" {
   }
 
   container {
-    type = "DOCKER"
     docker {
       image = "python:3"
       network = "BRIDGE"
@@ -32,14 +23,13 @@ resource "marathon_app" "app-create-example" {
         port_mapping {
           container_port = 8080
           host_port = 0
-          # service_port = 9000
           protocol = "tcp"
         }
-        # port_mapping {
-        #   container_port = 161
-        #   host_port = 0
-        #   protocol = "udp"
-        # }
+        port_mapping {
+          container_port = 161
+          host_port = 0
+          protocol = "udp"
+        }
       }
     }
 
@@ -59,37 +49,37 @@ resource "marathon_app" "app-create-example" {
 
   cpus = "0.01"
 
-  # dependencies = ["/test"]
-
   env {
     TEST = "hey"
     OTHER_TEST = "nope"
   }
 
-  # health_checks {
-  #   health_check {
-  #     grace_period_seconds = 3
-  #     interval_seconds = 10
-  #     max_consecutive_failures = 3
-  #     path = "/"
-  #     port_index = 0
-  #     protocol = "HTTP"
-  #     timeout_seconds = 5
-  #   }
-  #   health_check {
-  #     command {
-  #       value = "curl -f -X GET http://$HOST:$PORT0/"
-  #     }
-  #     max_consecutive_failures = 3
-  #     protocol = "COMMAND"
-  #   }
-  # }
+  health_checks {
+    health_check {
+      grace_period_seconds = 3
+      interval_seconds = 10
+      max_consecutive_failures = 0
+      path = "/"
+      port_index = 0
+      protocol = "HTTP"
+      timeout_seconds = 5
+    }
+    health_check {
+      command {
+        value = "curl -f -X GET http://$HOST:$PORT0/"
+      }
+      max_consecutive_failures = 0
+      protocol = "COMMAND"
+    }
+  }
 
   instances = 1
   mem = 50
-  ports = [0]
+  ports = [0, 0]
 
   upgrade_strategy {
     minimum_health_capacity = "0.5"
   }
+
+  # dependencies = ["/test"]
 }
