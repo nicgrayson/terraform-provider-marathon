@@ -740,6 +740,8 @@ func mutateResourceToApplication(d *schema.ResourceData) *marathon.Application {
 		}
 
 		application.Env = env
+	} else {
+		application.Env = make(map[string]string, 0)
 	}
 
 	if v, ok := d.GetOk("health_checks.0.health_check.#"); ok {
