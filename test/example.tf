@@ -54,24 +54,24 @@ resource "marathon_app" "app-create-example" {
     OTHER_TEST = "nope"
   }
 
-  # health_checks {
-  #   health_check {
-  #     grace_period_seconds = 3
-  #     interval_seconds = 10
-  #     max_consecutive_failures = 0
-  #     path = "/"
-  #     port_index = 0
-  #     protocol = "HTTP"
-  #     timeout_seconds = 5
-  #   }
-  #   health_check {
-  #     command {
-  #       value = "curl -f -X GET http://$HOST:$PORT0/"
-  #     }
-  #     max_consecutive_failures = 0
-  #     protocol = "COMMAND"
-  #   }
-  # }
+  health_checks {
+    health_check {
+      grace_period_seconds = 3
+      interval_seconds = 10
+      max_consecutive_failures = 0
+      path = "/"
+      port_index = 0
+      protocol = "HTTP"
+      timeout_seconds = 5
+    }
+    health_check {
+      command {
+        value = "curl -f -X GET http://$HOST:$PORT0/"
+      }
+      max_consecutive_failures = 0
+      protocol = "COMMAND"
+    }
+  }
 
   instances = 1
   mem = 50

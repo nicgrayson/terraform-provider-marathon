@@ -356,11 +356,14 @@ func resourceMarathonAppCreate(d *schema.ResourceData, meta interface{}) error {
 	d.SetId(application.ID)
 	setSchemaFieldsForApp(application, d)
 
-	err = client.WaitOnApplication(application.ID, config.DefaultDeploymentTimeout)
-	if err != nil {
-		log.Println("[ERROR] waiting for application", err)
-		return err
+	for _, deployment := range application.DeploymentID {
+		err = client.WaitOnDeployment(deployment["id"], config.DefaultDeploymentTimeout)
+		if err != nil {
+			log.Println("[ERROR] waiting for application for deployment", deployment, err)
+			return err
+		}
 	}
+
 	d.Partial(false)
 
 	return resourceMarathonAppRead(d, meta)
