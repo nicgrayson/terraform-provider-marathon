@@ -289,6 +289,11 @@ func resourceMarathonApp() *schema.Resource {
 				Default:  1,
 				ForceNew: false,
 			},
+			"labels": &schema.Schema{
+				Type:     schema.TypeMap,
+				Optional: true,
+				ForceNew: false,
+			},
 			"mem": &schema.Schema{
 				Type:     schema.TypeFloat,
 				Optional: true,
@@ -522,6 +527,9 @@ func setSchemaFieldsForApp(app *marathon.Application, d *schema.ResourceData) {
 
 	d.Set("instances", app.Instances)
 	d.SetPartial("instances")
+
+	d.Set("labels", app.Labels)
+	d.SetPartial("labels")
 
 	d.Set("mem", app.Mem)
 	d.SetPartial("mem")
@@ -839,6 +847,19 @@ func mutateResourceToApplication(d *schema.ResourceData) *marathon.Application {
 
 	if v, ok := d.GetOk("instances"); ok {
 		application.Instances = v.(int)
+	}
+
+	if v, ok := d.GetOk("labels"); ok {
+		labelsMap := v.(map[string]interface{})
+		labels := make(map[string]string, len(labelsMap))
+
+		for k, v := range labelsMap {
+			labels[k] = v.(string)
+		}
+
+		application.Labels = labels
+	} else {
+		application.Labels = make(map[string]string, 0)
 	}
 
 	if v, ok := d.GetOk("mem"); ok {

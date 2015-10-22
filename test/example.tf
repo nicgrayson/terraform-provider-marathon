@@ -77,6 +77,9 @@ resource "marathon_app" "app-create-example" {
   }
 
   instances = 1
+  labels {
+    test = "abc"
+  }
   mem = 50
   ports = [0, 0]
 
