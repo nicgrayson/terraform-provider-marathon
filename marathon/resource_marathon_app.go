@@ -425,28 +425,37 @@ func setSchemaFieldsForApp(app *marathon.Application, d *schema.ResourceData) {
 			dockerMap["network"] = docker.Network
 			dockerMap["privileged"] = docker.Privileged
 
-			portMappings := make([]map[string]interface{}, len(docker.PortMappings))
-			dockerMap["port_mappings"] = []interface{}{map[string]interface{}{"port_mapping": portMappings}}
-			for idx, portMapping := range docker.PortMappings {
-				pmMap := make(map[string]interface{})
-				pmMap["container_port"] = portMapping.ContainerPort
-				pmMap["host_port"] = portMapping.HostPort
-				// pmMap["service_port"] = portMapping.ServicePort
-				pmMap["protocol"] = portMapping.Protocol
-				portMappings[idx] = pmMap
+			if len(docker.PortMappings) > 0 {
+				portMappings := make([]map[string]interface{}, len(docker.PortMappings))
+				for idx, portMapping := range docker.PortMappings {
+					pmMap := make(map[string]interface{})
+					pmMap["container_port"] = portMapping.ContainerPort
+					pmMap["host_port"] = portMapping.HostPort
+					// pmMap["service_port"] = portMapping.ServicePort
+					pmMap["protocol"] = portMapping.Protocol
+					portMappings[idx] = pmMap
+				}
+				dockerMap["port_mappings"] = []interface{}{map[string]interface{}{"port_mapping": portMappings}}
+			} else {
+				dockerMap["port_mappings"] = make([]interface{}, 0)
 			}
 
 		}
 
-		volumes := make([]map[string]interface{}, len(container.Volumes))
-		containerMap["volumes"] = []interface{}{map[string]interface{}{"volume": volumes}}
-		for idx, volume := range container.Volumes {
-			volumeMap := make(map[string]interface{})
-			volumeMap["container_path"] = volume.ContainerPath
-			volumeMap["host_path"] = volume.HostPath
-			volumeMap["mode"] = volume.Mode
-			volumes[idx] = volumeMap
+		if len(container.Volumes) > 0 {
+			volumes := make([]map[string]interface{}, len(container.Volumes))
+			for idx, volume := range container.Volumes {
+				volumeMap := make(map[string]interface{})
+				volumeMap["container_path"] = volume.ContainerPath
+				volumeMap["host_path"] = volume.HostPath
+				volumeMap["mode"] = volume.Mode
+				volumes[idx] = volumeMap
+			}
+			containerMap["volumes"] = []interface{}{map[string]interface{}{"volume": volumes}}
+		} else {
+			containerMap["volumes"] = make([]interface{}, 0)
 		}
+
 		d.Set("container", []interface{}{containerMap})
 	}
 	d.SetPartial("container")
