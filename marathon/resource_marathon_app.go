@@ -338,7 +338,7 @@ func resourceMarathonAppCreate(d *schema.ResourceData, meta interface{}) error {
 
 	application, err := client.CreateApplication(application)
 	if err != nil {
-		log.Println(err)
+		log.Println("[ERROR] creating application", err)
 		return err
 	}
 	d.Partial(true)
@@ -347,7 +347,7 @@ func resourceMarathonAppCreate(d *schema.ResourceData, meta interface{}) error {
 
 	err = client.WaitOnApplication(application.ID, config.DefaultDeploymentTimeout)
 	if err != nil {
-		log.Println(err)
+		log.Println("[ERROR] waiting for application", err)
 		return err
 	}
 	d.Partial(false)
@@ -398,17 +398,21 @@ func setSchemaFieldsForApp(app *marathon.Application, d *schema.ResourceData) {
 	d.Set("cmd", app.Cmd)
 	d.SetPartial("cmd")
 
-	cMaps := make([]map[string]string, len(app.Constraints))
-	for idx, constraint := range app.Constraints {
-		cMap := make(map[string]string)
-		cMap["attribute"] = constraint[0]
-		cMap["operation"] = constraint[1]
-		if len(constraint) > 2 {
-			cMap["parameter"] = constraint[2]
+	if len(app.Constraints) > 0 {
+		cMaps := make([]map[string]string, len(app.Constraints))
+		for idx, constraint := range app.Constraints {
+			cMap := make(map[string]string)
+			cMap["attribute"] = constraint[0]
+			cMap["operation"] = constraint[1]
+			if len(constraint) > 2 {
+				cMap["parameter"] = constraint[2]
+			}
+			cMaps[idx] = cMap
 		}
-		cMaps[idx] = cMap
+		d.Set("constraints", []interface{}{map[string]interface{}{"constraint": cMaps}})
+	} else {
+		d.Set("constraints", make([]interface{}, 0))
 	}
-	d.Set("constraints", cMaps)
 	d.SetPartial("constraints")
 
 	if app.Container != nil {
@@ -638,6 +642,8 @@ func mutateResourceToApplication(d *schema.ResourceData) *marathon.Application {
 		}
 
 		application.Constraints = constraints
+	} else {
+		application.Constraints = make([][]string, 0)
 	}
 
 	if v, ok := d.GetOk("container.0.type"); ok {
