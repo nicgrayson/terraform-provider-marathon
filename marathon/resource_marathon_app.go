@@ -365,10 +365,10 @@ func resourceMarathonAppCreate(d *schema.ResourceData, meta interface{}) error {
 	d.SetId(application.ID)
 	setSchemaFieldsForApp(application, d)
 
-	for _, deployment := range application.DeploymentID {
-		err = client.WaitOnDeployment(deployment["id"], config.DefaultDeploymentTimeout)
+	for _, deploymentID := range application.DeploymentIDs() {
+		err = client.WaitOnDeployment(deploymentID.DeploymentID, config.DefaultDeploymentTimeout)
 		if err != nil {
-			log.Println("[ERROR] waiting for application for deployment", deployment, err)
+			log.Println("[ERROR] waiting for application for deployment", deploymentID, err)
 			return err
 		}
 	}
