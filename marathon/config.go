@@ -2,7 +2,6 @@ package marathon
 
 import (
 	"github.com/gambol99/go-marathon"
-	"os"
 	"time"
 )
 
@@ -20,7 +19,6 @@ func (c *Config) loadAndValidate() error {
 	marathonConfig := marathon.NewDefaultConfig()
 	marathonConfig.URL = c.Url
 	marathonConfig.RequestTimeout = c.RequestTimeout
-	marathonConfig.LogOutput = os.Stdout
 
 	client, err := marathon.NewClient(marathonConfig)
 	c.Client = client
