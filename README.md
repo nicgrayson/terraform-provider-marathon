@@ -22,6 +22,26 @@ provider "marathon" {
 }
 ```
 
+If Marathon endpoint requires basic auth (with TLS, hopefully), optionally include username and password:
+```bash
+$ export TF_VAR_marathon_url="https://marthon.domain.tld:8443"
+$ export TF_VAR_marathon_user="username"
+$ export TF_VAR_marathon_password="password"
+
+```
+
+```hcl
+variable "marathon_url" {}
+variable "marathon_user" {}
+variable "marathon_password" {}
+
+provider "marathon" {
+  url = "${var.marathon_url}"
+  basic_auth_user = "${var.marathon_user}"
+  basic_auth_password = "${var.marathon_password}"
+}
+```
+
 ### Basic Usage
 ```hcl
 resource "marathon_app" "hello-world" {
