@@ -27,6 +27,16 @@ func Provider() terraform.ResourceProvider {
 				Default:     600,
 				Description: "'Deployment Timeout",
 			},
+			"basic_auth_user": &schema.Schema{
+				Type:        schema.TypeString,
+				Optional:    true,
+				Description: "HTTP basic auth user",
+			},
+			"basic_auth_password": &schema.Schema{
+				Type:        schema.TypeString,
+				Optional:    true,
+				Description: "HTTP basic auth password",
+			},
 		},
 
 		ResourcesMap: map[string]*schema.Resource{
@@ -42,6 +52,8 @@ func providerConfigure(d *schema.ResourceData) (interface{}, error) {
 		Url:                      d.Get("url").(string),
 		RequestTimeout:           d.Get("request_timeout").(int),
 		DefaultDeploymentTimeout: time.Duration(d.Get("deployment_timeout").(int)) * time.Second,
+		BasicAuthUser:            d.Get("basic_auth_user").(string),
+		BasicAuthPassword:        d.Get("basic_auth_password").(string),
 	}
 
 	if err := config.loadAndValidate(); err != nil {
