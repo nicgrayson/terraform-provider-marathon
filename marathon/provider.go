@@ -30,11 +30,13 @@ func Provider() terraform.ResourceProvider {
 			"basic_auth_user": &schema.Schema{
 				Type:        schema.TypeString,
 				Optional:    true,
+				Default:     "",
 				Description: "HTTP basic auth user",
 			},
 			"basic_auth_password": &schema.Schema{
 				Type:        schema.TypeString,
 				Optional:    true,
+				Default:     "",
 				Description: "HTTP basic auth password",
 			},
 		},
