@@ -386,7 +386,7 @@ func resourceMarathonAppRead(d *schema.ResourceData, meta interface{}) error {
 
 	if err != nil {
 		// Handle a deleted app
-		if err == marathon.ErrDoesNotExist {
+		if apiErr, ok := err.(*marathon.APIError); ok && apiErr.ErrCode == marathon.ErrCodeNotFound {
 			d.SetId("")
 			return nil
 		}
