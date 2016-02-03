@@ -2,6 +2,7 @@ package marathon
 
 import (
 	"github.com/gambol99/go-marathon"
+	"net/http"
 	"time"
 )
 
@@ -20,7 +21,9 @@ func (c *Config) loadAndValidate() error {
 	// this needs to return an err as well.
 	marathonConfig := marathon.NewDefaultConfig()
 	marathonConfig.URL = c.Url
-	marathonConfig.RequestTimeout = c.RequestTimeout
+	marathonConfig.HTTPClient = &http.Client{
+		Timeout: time.Duration(c.RequestTimeout) * time.Second,
+	}
 	marathonConfig.HTTPBasicAuthUser = c.BasicAuthUser
 	marathonConfig.HTTPBasicPassword = c.BasicAuthPassword
 
