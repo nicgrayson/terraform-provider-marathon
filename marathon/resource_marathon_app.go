@@ -590,7 +590,7 @@ func resourceMarathonAppUpdate(d *schema.ResourceData, meta interface{}) error {
 
 	application := mutateResourceToApplication(d)
 
-	deploymentId, err := client.UpdateApplication(application)
+	deploymentId, err := client.UpdateApplication(application, false)
 	if err != nil {
 		return err
 	}
