@@ -384,6 +384,7 @@ func resourceMarathonAppRead(d *schema.ResourceData, meta interface{}) error {
 
 	app, err := client.Application(d.Id())
 
+	fmt.Printf("%#v\n---------\n%#v\n---------\n%#v\n", app, d, meta)
 	if err != nil {
 		// Handle a deleted app
 		if apiErr, ok := err.(*marathon.APIError); ok && apiErr.ErrCode == marathon.ErrCodeNotFound {
@@ -393,37 +394,40 @@ func resourceMarathonAppRead(d *schema.ResourceData, meta interface{}) error {
 		return err
 	}
 
-	if app.ID == "" {
+	if app != nil && app.ID == "" {
 		d.SetId("")
 	}
 
-	setSchemaFieldsForApp(app, d)
+	if app != nil {
+		setSchemaFieldsForApp(app, d)
+	}
 
 	return nil
 }
 
 func setSchemaFieldsForApp(app *marathon.Application, d *schema.ResourceData) {
+
 	d.Set("app_id", app.ID)
 	d.SetPartial("app_id")
 
-	d.Set("accepted_resource_roles", app.AcceptedResourceRoles)
+	d.Set("accepted_resource_roles", &app.AcceptedResourceRoles)
 	d.SetPartial("accepted_resource_roles")
 
-	d.Set("args", app.Args)
+	d.Set("args", &app.Args)
 	d.SetPartial("args")
 
-	d.Set("backoff_seconds", app.BackoffSeconds)
+	d.Set("backoff_seconds", &app.BackoffSeconds)
 	d.SetPartial("backoff_seconds")
 
-	d.Set("backoff_factor", app.BackoffFactor)
+	d.Set("backoff_factor", &app.BackoffFactor)
 	d.SetPartial("backoff_factor")
 
-	d.Set("cmd", app.Cmd)
+	d.Set("cmd", &app.Cmd)
 	d.SetPartial("cmd")
 
-	if len(app.Constraints) > 0 {
-		cMaps := make([]map[string]string, len(app.Constraints))
-		for idx, constraint := range app.Constraints {
+	if app.Constraints != nil && len(*app.Constraints) > 0 {
+		cMaps := make([]map[string]string, len(*app.Constraints))
+		for idx, constraint := range *app.Constraints {
 			cMap := make(map[string]string)
 			cMap["attribute"] = constraint[0]
 			cMap["operation"] = constraint[1]
@@ -432,9 +436,11 @@ func setSchemaFieldsForApp(app *marathon.Application, d *schema.ResourceData) {
 			}
 			cMaps[idx] = cMap
 		}
-		d.Set("constraints", []interface{}{map[string]interface{}{"constraint": cMaps}})
+		constraints := []interface{}{map[string]interface{}{"constraint": cMaps}}
+		d.Set("constraints", &constraints)
 	} else {
-		d.Set("constraints", make([]interface{}, 0))
+		constraints := make([]interface{}, 0)
+		d.Set("constraints", &constraints)
 	}
 	d.SetPartial("constraints")
 
@@ -452,16 +458,16 @@ func setSchemaFieldsForApp(app *marathon.Application, d *schema.ResourceData) {
 			dockerMap["image"] = docker.Image
 			dockerMap["force_pull_image"] = docker.ForcePullImage
 			dockerMap["network"] = docker.Network
-			parametersMap := make(map[string]interface{}, len(docker.Parameters))
-			for _, p := range docker.Parameters {
+			parametersMap := make(map[string]interface{}, len(*docker.Parameters))
+			for _, p := range *docker.Parameters {
 				parametersMap[p.Key] = p.Value
 			}
 			dockerMap["parameters"] = parametersMap
 			dockerMap["privileged"] = docker.Privileged
 
-			if len(docker.PortMappings) > 0 {
-				portMappings := make([]map[string]interface{}, len(docker.PortMappings))
-				for idx, portMapping := range docker.PortMappings {
+			if len(*docker.PortMappings) > 0 {
+				portMappings := make([]map[string]interface{}, len(*docker.PortMappings))
+				for idx, portMapping := range *docker.PortMappings {
 					pmMap := make(map[string]interface{})
 					pmMap["container_port"] = portMapping.ContainerPort
 					pmMap["host_port"] = portMapping.HostPort
@@ -476,9 +482,9 @@ func setSchemaFieldsForApp(app *marathon.Application, d *schema.ResourceData) {
 
 		}
 
-		if len(container.Volumes) > 0 {
-			volumes := make([]map[string]interface{}, len(container.Volumes))
-			for idx, volume := range container.Volumes {
+		if len(*container.Volumes) > 0 {
+			volumes := make([]map[string]interface{}, len(*container.Volumes))
+			for idx, volume := range *container.Volumes {
 				volumeMap := make(map[string]interface{})
 				volumeMap["container_path"] = volume.ContainerPath
 				volumeMap["host_path"] = volume.HostPath
@@ -490,22 +496,22 @@ func setSchemaFieldsForApp(app *marathon.Application, d *schema.ResourceData) {
 			containerMap["volumes"] = make([]interface{}, 0)
 		}
 
-		d.Set("container", []interface{}{containerMap})
+		d.Set("container", &[]interface{}{containerMap})
 	}
 	d.SetPartial("container")
 
-	d.Set("cpus", app.CPUs)
+	d.Set("cpus", &app.CPUs)
 	d.SetPartial("cpus")
 
-	d.Set("dependencies", app.Dependencies)
+	d.Set("dependencies", &app.Dependencies)
 	d.SetPartial("dependencies")
 
-	d.Set("env", app.Env)
+	d.Set("env", &app.Env)
 	d.SetPartial("env")
 
-	if len(app.HealthChecks) > 0 {
-		healthChecks := make([]map[string]interface{}, len(app.HealthChecks))
-		for idx, healthCheck := range app.HealthChecks {
+	if app.HealthChecks != nil && len(*app.HealthChecks) > 0 {
+		healthChecks := make([]map[string]interface{}, len(*app.HealthChecks))
+		for idx, healthCheck := range *app.HealthChecks {
 			hMap := make(map[string]interface{})
 			if healthCheck.Command != nil {
 				hMap["command"] = []interface{}{map[string]string{"value": healthCheck.Command.Value}}
@@ -519,54 +525,58 @@ func setSchemaFieldsForApp(app *marathon.Application, d *schema.ResourceData) {
 			hMap["timeout_seconds"] = healthCheck.TimeoutSeconds
 			healthChecks[idx] = hMap
 		}
-		d.Set("health_checks", []interface{}{map[string]interface{}{"health_check": healthChecks}})
+		d.Set("health_checks", &[]interface{}{map[string]interface{}{"health_check": healthChecks}})
 	} else {
-		d.Set("health_checks", make([]interface{}, 0))
+		healthChecks := make([]interface{}, 0)
+		d.Set("health_checks", &healthChecks)
 	}
+
 	d.SetPartial("health_checks")
 
-	d.Set("instances", app.Instances)
+	d.Set("instances", &app.Instances)
 	d.SetPartial("instances")
 
-	d.Set("labels", app.Labels)
+	d.Set("labels", &app.Labels)
 	d.SetPartial("labels")
 
-	d.Set("mem", app.Mem)
+	d.Set("mem", &app.Mem)
 	d.SetPartial("mem")
 
 	if givenFreePortsDoesNotEqualAllocated(d, app) {
-		d.Set("ports", app.Ports)
+		d.Set("ports", &app.Ports)
 	}
 	d.SetPartial("ports")
 
-	d.Set("require_ports", app.RequirePorts)
+	d.Set("require_ports", &app.RequirePorts)
 	d.SetPartial("require_ports")
 
 	if app.UpgradeStrategy != nil {
 		usMap := make(map[string]interface{})
 		usMap["minimum_health_capacity"] = app.UpgradeStrategy.MinimumHealthCapacity
 		usMap["maximum_over_capacity"] = app.UpgradeStrategy.MaximumOverCapacity
-		d.Set("upgrade_strategy", []interface{}{usMap})
+		d.Set("upgrade_strategy", &[]interface{}{usMap})
 	} else {
-		d.Set("upgrade_strategy", make([]interface{}, 0))
+		usMap := make([]interface{}, 0)
+		d.Set("upgrade_strategy", &usMap)
 	}
 	d.SetPartial("upgrade_strategy")
 
-	d.Set("uris", app.Uris)
+	d.Set("uris", &app.Uris)
 	d.SetPartial("uris")
 
 	// App
-	d.Set("executor", app.Executor)
+	d.Set("executor", &app.Executor)
 	d.SetPartial("executor")
 
-	d.Set("disk", app.Disk)
+	d.Set("disk", &app.Disk)
 	d.SetPartial("disk")
 
-	d.Set("user", app.User)
+	d.Set("user", &app.User)
 	d.SetPartial("user")
 
-	d.Set("version", app.Version)
+	d.Set("version", &app.Version)
 	d.SetPartial("version")
+
 }
 
 func givenFreePortsDoesNotEqualAllocated(d *schema.ResourceData, app *marathon.Application) bool {
@@ -639,20 +649,23 @@ func mutateResourceToApplication(d *schema.ResourceData) *marathon.Application {
 		}
 
 		if len(args) != 0 {
-			application.Args = args
+			application.Args = &args
 		}
 	}
 
 	if v, ok := d.GetOk("backoff_seconds"); ok {
-		application.BackoffSeconds = v.(float64)
+		value := v.(float64)
+		application.BackoffSeconds = &value
 	}
 
 	if v, ok := d.GetOk("backoff_factor"); ok {
-		application.BackoffFactor = v.(float64)
+		value := v.(float64)
+		application.BackoffFactor = &value
 	}
 
 	if v, ok := d.GetOk("cmd"); ok {
-		application.Cmd = v.(string)
+		value := v.(string)
+		application.Cmd = &value
 	}
 
 	if v, ok := d.GetOk("constraints.0.constraint.#"); ok {
@@ -673,9 +686,10 @@ func mutateResourceToApplication(d *schema.ResourceData) *marathon.Application {
 			}
 		}
 
-		application.Constraints = constraints
+		application.Constraints = &constraints
 	} else {
-		application.Constraints = make([][]string, 0)
+		constraints := make([][]string, 0)
+		application.Constraints = &constraints
 	}
 
 	if v, ok := d.GetOk("container.0.type"); ok {
@@ -692,7 +706,8 @@ func mutateResourceToApplication(d *schema.ResourceData) *marathon.Application {
 			}
 
 			if v, ok := d.GetOk("container.0.docker.0.force_pull_image"); ok {
-				docker.ForcePullImage = v.(bool)
+				value := v.(bool)
+				docker.ForcePullImage = &value
 			}
 
 			if v, ok := d.GetOk("container.0.docker.0.network"); ok {
@@ -701,24 +716,26 @@ func mutateResourceToApplication(d *schema.ResourceData) *marathon.Application {
 
 			if v, ok := d.GetOk("container.0.docker.0.parameters"); ok {
 				parametersMap := v.(map[string]interface{})
-				parameters := make([]*marathon.Parameters, len(parametersMap))
+				parameters := make([]marathon.Parameters, len(parametersMap))
 				i := 0
 				for k, v := range parametersMap {
-					parameters[i] = &marathon.Parameters{Key: k, Value: v.(string)}
+					parameters[i] = marathon.Parameters{Key: k, Value: v.(string)}
 					i++
 				}
-				docker.Parameters = parameters
+				docker.Parameters = &parameters
 			}
 
 			if v, ok := d.GetOk("container.0.docker.0.privileged"); ok {
-				docker.Privileged = v.(bool)
+				value := v.(bool)
+				docker.Privileged = &value
 			}
 
 			if v, ok := d.GetOk("container.0.docker.0.port_mappings.0.port_mapping.#"); ok {
-				portMappings := make([]*marathon.PortMapping, v.(int))
+				portMappings := make([]marathon.PortMapping, v.(int))
 
 				for i, _ := range portMappings {
-					portMappings[i] = new(marathon.PortMapping)
+					portMapping := new(marathon.PortMapping)
+					portMappings[i] = *portMapping
 
 					pmMap := d.Get(fmt.Sprintf("container.0.docker.0.port_mappings.0.port_mapping.%d", i)).(map[string]interface{})
 
@@ -736,17 +753,18 @@ func mutateResourceToApplication(d *schema.ResourceData) *marathon.Application {
 					}
 
 				}
-				docker.PortMappings = portMappings
+				docker.PortMappings = &portMappings
 			}
 			container.Docker = docker
 
 		}
 
 		if v, ok := d.GetOk("container.0.volumes.0.volume.#"); ok {
-			volumes := make([]*marathon.Volume, v.(int))
+			volumes := make([]marathon.Volume, v.(int))
 
 			for i, _ := range volumes {
-				volumes[i] = new(marathon.Volume)
+				volume := new(marathon.Volume)
+				volumes[i] = *volume
 
 				volumeMap := d.Get(fmt.Sprintf("container.0.volumes.0.volume.%d", i)).(map[string]interface{})
 
@@ -760,7 +778,7 @@ func mutateResourceToApplication(d *schema.ResourceData) *marathon.Application {
 					volumes[i].Mode = val.(string)
 				}
 			}
-			container.Volumes = volumes
+			container.Volumes = &volumes
 		}
 
 		application.Container = container
@@ -790,13 +808,14 @@ func mutateResourceToApplication(d *schema.ResourceData) *marathon.Application {
 			env[k] = v.(string)
 		}
 
-		application.Env = env
+		application.Env = &env
 	} else {
-		application.Env = make(map[string]string, 0)
+		env := make(map[string]string, 0)
+		application.Env = &env
 	}
 
 	if v, ok := d.GetOk("health_checks.0.health_check.#"); ok {
-		healthChecks := make([]*marathon.HealthCheck, v.(int))
+		healthChecks := make([]marathon.HealthCheck, v.(int))
 
 		for i, _ := range healthChecks {
 			healthCheck := new(marathon.HealthCheck)
@@ -809,11 +828,13 @@ func mutateResourceToApplication(d *schema.ResourceData) *marathon.Application {
 				healthCheck.Protocol = "COMMAND"
 			} else {
 				if prop, ok := mapStruct["path"]; ok {
-					healthCheck.Path = prop.(string)
+					prop := prop.(string)
+					healthCheck.Path = &prop
 				}
 
 				if prop, ok := mapStruct["port_index"]; ok {
-					healthCheck.PortIndex = prop.(int)
+					prop := prop.(int)
+					healthCheck.PortIndex = &prop
 				}
 
 				if prop, ok := mapStruct["protocol"]; ok {
@@ -834,19 +855,22 @@ func mutateResourceToApplication(d *schema.ResourceData) *marathon.Application {
 			}
 
 			if prop, ok := mapStruct["max_consecutive_failures"]; ok {
-				healthCheck.MaxConsecutiveFailures = prop.(int)
+				prop := prop.(int)
+				healthCheck.MaxConsecutiveFailures = &prop
 			}
 
-			healthChecks[i] = healthCheck
+			healthChecks[i] = *healthCheck
 		}
 
-		application.HealthChecks = healthChecks
+		application.HealthChecks = &healthChecks
 	} else {
-		application.HealthChecks = make([]*marathon.HealthCheck, 0)
+		healthChecks := make([]marathon.HealthCheck, 0)
+		application.HealthChecks = &healthChecks
 	}
 
 	if v, ok := d.GetOk("instances"); ok {
-		application.Instances = v.(int)
+		v := v.(int)
+		application.Instances = &v
 	}
 
 	if v, ok := d.GetOk("labels"); ok {
@@ -857,17 +881,20 @@ func mutateResourceToApplication(d *schema.ResourceData) *marathon.Application {
 			labels[k] = v.(string)
 		}
 
-		application.Labels = labels
+		application.Labels = &labels
 	} else {
-		application.Labels = make(map[string]string, 0)
+		labels := make(map[string]string, 0)
+		application.Labels = &labels
 	}
 
 	if v, ok := d.GetOk("mem"); ok {
-		application.Mem = v.(float64)
+		v := v.(float64)
+		application.Mem = &v
 	}
 
 	if v, ok := d.GetOk("require_ports"); ok {
-		application.RequirePorts = v.(bool)
+		v := v.(bool)
+		application.RequirePorts = &v
 	}
 
 	application.Ports = getPorts(d)
@@ -892,7 +919,7 @@ func mutateResourceToApplication(d *schema.ResourceData) *marathon.Application {
 		}
 
 		if len(uris) != 0 {
-			application.Uris = uris
+			application.Uris = &uris
 		}
 	}
 
