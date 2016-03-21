@@ -384,7 +384,6 @@ func resourceMarathonAppRead(d *schema.ResourceData, meta interface{}) error {
 
 	app, err := client.Application(d.Id())
 
-	fmt.Printf("%#v\n---------\n%#v\n---------\n%#v\n", app, d, meta)
 	if err != nil {
 		// Handle a deleted app
 		if apiErr, ok := err.(*marathon.APIError); ok && apiErr.ErrCode == marathon.ErrCodeNotFound {
