@@ -40,7 +40,7 @@ func TestAccMarathonApp_basic(t *testing.T) {
 			if a.Version == "" {
 				return fmt.Errorf("Didn't return a version so something is broken: %#v", app)
 			}
-			if a.Instances != 1 {
+			if *a.Instances != 1 {
 				return fmt.Errorf("AppCreate: Wrong number of instances %#v", app)
 			}
 			return nil
@@ -49,7 +49,7 @@ func TestAccMarathonApp_basic(t *testing.T) {
 
 	testCheckUpdate := func(app *marathon.Application) resource.TestCheckFunc {
 		return func(s *terraform.State) error {
-			if a.Instances != 2 {
+			if *a.Instances != 2 {
 				return fmt.Errorf("AppUpdate: Wrong number of instances %#v", app)
 
 			}
