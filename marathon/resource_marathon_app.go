@@ -464,7 +464,7 @@ func setSchemaFieldsForApp(app *marathon.Application, d *schema.ResourceData) {
 			dockerMap["parameters"] = parametersMap
 			dockerMap["privileged"] = docker.Privileged
 
-			if len(*docker.PortMappings) > 0 {
+			if docker.PortMappings != nil && len(*docker.PortMappings) > 0 {
 				portMappings := make([]map[string]interface{}, len(*docker.PortMappings))
 				for idx, portMapping := range *docker.PortMappings {
 					pmMap := make(map[string]interface{})
