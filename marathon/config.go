@@ -6,8 +6,8 @@ import (
 	"time"
 )
 
-type Config struct {
-	Url                      string
+type config struct {
+	URL                      string
 	RequestTimeout           int
 	DefaultDeploymentTimeout time.Duration
 	BasicAuthUser            string
@@ -16,11 +16,11 @@ type Config struct {
 	Client marathon.Marathon
 }
 
-func (c *Config) loadAndValidate() error {
+func (c *config) loadAndValidate() error {
 
 	// this needs to return an err as well.
 	marathonConfig := marathon.NewDefaultConfig()
-	marathonConfig.URL = c.Url
+	marathonConfig.URL = c.URL
 	marathonConfig.HTTPClient = &http.Client{
 		Timeout: time.Duration(c.RequestTimeout) * time.Second,
 	}

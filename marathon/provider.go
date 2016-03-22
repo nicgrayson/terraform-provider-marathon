@@ -6,6 +6,7 @@ import (
 	"time"
 )
 
+// Provider is the provider for terraform
 func Provider() terraform.ResourceProvider {
 	return &schema.Provider{
 		Schema: map[string]*schema.Schema{
@@ -50,8 +51,8 @@ func Provider() terraform.ResourceProvider {
 }
 
 func providerConfigure(d *schema.ResourceData) (interface{}, error) {
-	config := Config{
-		Url:                      d.Get("url").(string),
+	config := config{
+		URL:                      d.Get("url").(string),
 		RequestTimeout:           d.Get("request_timeout").(int),
 		DefaultDeploymentTimeout: time.Duration(d.Get("deployment_timeout").(int)) * time.Second,
 		BasicAuthUser:            d.Get("basic_auth_user").(string),

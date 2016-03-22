@@ -92,7 +92,7 @@ func testAccReadApp(name string, app *marathon.Application) resource.TestCheckFu
 
 		//log.Printf("=== testAccContainerExists: rs ===\n%#v\n", rs)
 
-		config := testAccProvider.Meta().(Config)
+		config := testAccProvider.Meta().(config)
 		client := config.Client
 
 		appRead, _ := client.Application(rs.Primary.Attributes["app_id"])
@@ -110,7 +110,7 @@ func testAccReadApp(name string, app *marathon.Application) resource.TestCheckFu
 func testAccCheckMarathonAppDestroy(s *terraform.State) error {
 	time.Sleep(5000 * time.Millisecond)
 
-	config := testAccProvider.Meta().(Config)
+	config := testAccProvider.Meta().(config)
 	client := config.Client
 
 	_, err := client.Application("/app-create-example")
