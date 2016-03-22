@@ -2,11 +2,12 @@ package marathon
 
 import (
 	"fmt"
-	"github.com/gambol99/go-marathon"
-	"github.com/hashicorp/terraform/helper/schema"
 	"log"
 	"reflect"
 	"strconv"
+
+	"github.com/gambol99/go-marathon"
+	"github.com/hashicorp/terraform/helper/schema"
 )
 
 func resourceMarathonApp() *schema.Resource {
@@ -625,7 +626,7 @@ func mutateResourceToApplication(d *schema.ResourceData) *marathon.Application {
 		acceptedResourceRoles := make([]string, v.(int))
 
 		for i := range acceptedResourceRoles {
-			acceptedResourceRoles[i] = d.Get("acceptedResourceRoles." + strconv.Itoa(i)).(string)
+			acceptedResourceRoles[i] = d.Get("accepted_resource_roles." + strconv.Itoa(i)).(string)
 		}
 
 		if len(acceptedResourceRoles) != 0 {
