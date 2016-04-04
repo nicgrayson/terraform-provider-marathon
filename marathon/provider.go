@@ -46,7 +46,7 @@ func Provider() terraform.ResourceProvider {
 			"log_output": &schema.Schema{
 				Type:        schema.TypeBool,
 				Optional:    true,
-				Default:     false,
+				Default:     true,
 				Description: "Log output to stdout",
 			},
 		},
