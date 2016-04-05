@@ -2,3 +2,4 @@
 /marathon/marathon.test
 /test/terraform.tfstate
 /test/terraform.tfstate.backup
+/marathon/test-sh-tf.log

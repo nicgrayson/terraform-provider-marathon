@@ -1,8 +1,11 @@
 package marathon
 
 import (
+	"github.com/gambol99/go-marathon"
 	"github.com/hashicorp/terraform/helper/schema"
 	"github.com/hashicorp/terraform/terraform"
+	"log"
+	"net/http"
 	"time"
 )
 
@@ -40,6 +43,12 @@ func Provider() terraform.ResourceProvider {
 				Default:     "",
 				Description: "HTTP basic auth password",
 			},
+			"log_output": &schema.Schema{
+				Type:        schema.TypeBool,
+				Optional:    true,
+				Default:     true,
+				Description: "Log output to stdout",
+			},
 		},
 
 		ResourcesMap: map[string]*schema.Resource{
@@ -51,17 +60,36 @@ func Provider() terraform.ResourceProvider {
 }
 
 func providerConfigure(d *schema.ResourceData) (interface{}, error) {
-	config := config{
-		URL:                      d.Get("url").(string),
-		RequestTimeout:           d.Get("request_timeout").(int),
-		DefaultDeploymentTimeout: time.Duration(d.Get("deployment_timeout").(int)) * time.Second,
-		BasicAuthUser:            d.Get("basic_auth_user").(string),
-		BasicAuthPassword:        d.Get("basic_auth_password").(string),
+	marathonConfig := marathon.NewDefaultConfig()
+
+	marathonConfig.URL = d.Get("url").(string)
+	marathonConfig.HTTPClient = &http.Client{
+		Timeout: time.Duration(d.Get("request_timeout").(int)) * time.Second,
 	}
+	marathonConfig.HTTPBasicAuthUser = d.Get("basic_auth_user").(string)
+	marathonConfig.HTTPBasicPassword = d.Get("basic_auth_password").(string)
+	if d.Get("log_output").(bool) {
+		marathonConfig.LogOutput = logWriter{}
+	}
+
+	config := config{
+		config: marathonConfig,
+		DefaultDeploymentTimeout: time.Duration(d.Get("deployment_timeout").(int)) * time.Second,
+	}
+
+	log.Printf("Configured: %#v", config)
 
 	if err := config.loadAndValidate(); err != nil {
 		return nil, err
 	}
 
 	return config, nil
+}
+
+type logWriter struct {
+}
+
+func (lw logWriter) Write(p []byte) (n int, err error) {
+	log.Print(string(p))
+	return len(p), nil
 }
