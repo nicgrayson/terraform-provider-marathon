@@ -822,6 +822,7 @@ func mutateResourceToApplication(d *schema.ResourceData) *marathon.Application {
 				commandMap := commands[0].(map[string]interface{})
 				healthCheck.Command = &marathon.Command{Value: commandMap["value"].(string)}
 				healthCheck.Protocol = "COMMAND"
+				healthCheck.Path = ""
 			} else {
 				if prop, ok := mapStruct["path"]; ok {
 					prop := prop.(string)
@@ -836,10 +837,10 @@ func mutateResourceToApplication(d *schema.ResourceData) *marathon.Application {
 				if prop, ok := mapStruct["protocol"]; ok {
 					healthCheck.Protocol = prop.(string)
 				}
+			}
 
-				if prop, ok := mapStruct["timeout_seconds"]; ok {
-					healthCheck.TimeoutSeconds = prop.(int)
-				}
+			if prop, ok := mapStruct["timeout_seconds"]; ok {
+				healthCheck.TimeoutSeconds = prop.(int)
 			}
 
 			if prop, ok := mapStruct["grace_period_seconds"]; ok {
