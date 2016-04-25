@@ -822,7 +822,8 @@ func mutateResourceToApplication(d *schema.ResourceData) *marathon.Application {
 				commandMap := commands[0].(map[string]interface{})
 				healthCheck.Command = &marathon.Command{Value: commandMap["value"].(string)}
 				healthCheck.Protocol = "COMMAND"
-				healthCheck.Path = ""
+				path := ""
+				healthCheck.Path = &path
 			} else {
 				if prop, ok := mapStruct["path"]; ok {
 					prop := prop.(string)
