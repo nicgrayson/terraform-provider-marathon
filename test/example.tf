@@ -20,7 +20,10 @@ resource "marathon_app" "app-create-example" {
       image = "python:3"
       network = "BRIDGE"
       parameters {
-        hostname = "a.corp.org"
+        parameters {
+          key = "hostname"
+          value = "a.corp.org"
+        }
       }
       port_mappings {
         port_mapping {
