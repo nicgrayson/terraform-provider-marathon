@@ -111,8 +111,32 @@ func resourceMarathonApp() *schema.Resource {
 										Optional: true,
 									},
 									"parameters": &schema.Schema{
-										Type:     schema.TypeMap,
+										Type:     schema.TypeList,
 										Optional: true,
+										ForceNew: false,
+										Elem: &schema.Resource{
+											Schema: map[string]*schema.Schema{
+												"parameter": &schema.Schema{
+													Type:     schema.TypeList,
+													Optional: true,
+													ForceNew: false,
+													Elem: &schema.Resource{
+														Schema: map[string]*schema.Schema{
+															"key": &schema.Schema{
+																Type:     schema.TypeString,
+																Default:  "tcp",
+																Optional: true,
+															},
+															"value": &schema.Schema{
+																Type:     schema.TypeString,
+																Default:  "tcp",
+																Optional: true,
+															},
+														},
+													},
+												},
+											},
+										},
 									},
 									"privileged": &schema.Schema{
 										Type:     schema.TypeBool,
@@ -457,11 +481,14 @@ func setSchemaFieldsForApp(app *marathon.Application, d *schema.ResourceData) {
 			dockerMap["image"] = docker.Image
 			dockerMap["force_pull_image"] = docker.ForcePullImage
 			dockerMap["network"] = docker.Network
-			parametersMap := make(map[string]interface{}, len(*docker.Parameters))
-			for _, p := range *docker.Parameters {
-				parametersMap[p.Key] = p.Value
+			parameters := make([]map[string]string, len(*docker.Parameters))
+			for idx, p := range *docker.Parameters {
+				parameter := make(map[string]string, 2)
+				parameter["key"] = p.Key
+				parameter["value"] = p.Value
+				parameters[idx] = parameter
 			}
-			dockerMap["parameters"] = parametersMap
+			dockerMap["parameters"] = parameters
 			dockerMap["privileged"] = docker.Privileged
 
 			if docker.PortMappings != nil && len(*docker.PortMappings) > 0 {
@@ -710,15 +737,11 @@ func mutateResourceToApplication(d *schema.ResourceData) *marathon.Application {
 				docker.Network = v.(string)
 			}
 
-			if v, ok := d.GetOk("container.0.docker.0.parameters"); ok {
-				parametersMap := v.(map[string]interface{})
-				parameters := make([]marathon.Parameters, len(parametersMap))
-				i := 0
-				for k, v := range parametersMap {
-					parameters[i] = marathon.Parameters{Key: k, Value: v.(string)}
-					i++
+			if v, ok := d.GetOk("container.0.docker.0.parameters.0.parameter.#"); ok {
+				for i := 0; i < v.(int); i++ {
+					paramMap := d.Get(fmt.Sprintf("container.0.docker.0.parameters.0.parameter.%d", i)).(map[string]interface{})
+					docker.AddParameter(paramMap["key"].(string), paramMap["value"].(string))
 				}
-				docker.Parameters = &parameters
 			}
 
 			if v, ok := d.GetOk("container.0.docker.0.privileged"); ok {
