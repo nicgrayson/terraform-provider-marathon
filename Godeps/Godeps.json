@@ -2,6 +2,9 @@
 	"ImportPath": "github.com/Banno/terraform-provider-marathon",
 	"GoVersion": "go1.6",
 	"GodepVersion": "v65",
+	"Packages": [
+		"./..."
+	],
 	"Deps": [
 		{
 			"ImportPath": "github.com/apparentlymart/go-cidr/cidr",
@@ -118,6 +121,10 @@
 			"Rev": "72440a9c5a884936f1c679591fcf04e31a9b772a"
 		},
 		{
+			"ImportPath": "github.com/davecgh/go-spew/spew",
+			"Rev": "5215b55f46b2b919f50a1df0eaa5886afe4e3b3d"
+		},
+		{
 			"ImportPath": "github.com/donovanhide/eventsource",
 			"Rev": "c3f57f280ec708df24886d9e62f2fd178d69d8e8"
 		},
@@ -193,11 +200,15 @@
 		},
 		{
 			"ImportPath": "github.com/hashicorp/hil",
-			"Rev": "0457360d54ca4d081a769eaa1617e0462153fd70"
+			"Rev": "0640fefa3817883b16b77bf760c4c3a6f2589545"
 		},
 		{
 			"ImportPath": "github.com/hashicorp/hil/ast",
-			"Rev": "0457360d54ca4d081a769eaa1617e0462153fd70"
+			"Rev": "0640fefa3817883b16b77bf760c4c3a6f2589545"
+		},
+		{
+			"ImportPath": "github.com/hashicorp/logutils",
+			"Rev": "0dc08b1671f34c4250ce212759ebd880f743d883"
 		},
 		{
 			"ImportPath": "github.com/hashicorp/terraform/config",
@@ -225,7 +236,22 @@
 			"Rev": "0c5c54e7b6a59d77e89ce24057509503639d8d3d"
 		},
 		{
+			"ImportPath": "github.com/hashicorp/terraform/helper/config",
+			"Comment": "v0.6.15",
+			"Rev": "0c5c54e7b6a59d77e89ce24057509503639d8d3d"
+		},
+		{
 			"ImportPath": "github.com/hashicorp/terraform/helper/hashcode",
+			"Comment": "v0.6.15",
+			"Rev": "0c5c54e7b6a59d77e89ce24057509503639d8d3d"
+		},
+		{
+			"ImportPath": "github.com/hashicorp/terraform/helper/logging",
+			"Comment": "v0.6.15",
+			"Rev": "0c5c54e7b6a59d77e89ce24057509503639d8d3d"
+		},
+		{
+			"ImportPath": "github.com/hashicorp/terraform/helper/resource",
 			"Comment": "v0.6.15",
 			"Rev": "0c5c54e7b6a59d77e89ce24057509503639d8d3d"
 		},
