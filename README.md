@@ -86,3 +86,7 @@ $ go install
 $ export MARATHON_URL="http://marthon.domain.tld:8080"
 $ ./test.sh
 ```
+
+### Updating dependencies
+
+This project uses [godep](https://github.com/tools/godep) to manage dependencies. If you're using Golang 1.6+, to build, nothing needs done. Please refer to https://devcenter.heroku.com/articles/go-dependencies-via-godep for help with updating and restoring godeps.
