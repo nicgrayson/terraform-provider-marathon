@@ -637,7 +637,7 @@ func resourceMarathonAppDelete(d *schema.ResourceData, meta interface{}) error {
 	config := meta.(config)
 	client := config.Client
 
-	deploymentID, err := client.DeleteApplication(d.Id())
+	deploymentID, err := client.DeleteApplication(d.Id(), false)
 	if err != nil {
 		return err
 	}
