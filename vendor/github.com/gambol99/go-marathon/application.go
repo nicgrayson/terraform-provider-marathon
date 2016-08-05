@@ -62,13 +62,13 @@ type Application struct {
 	TasksUnhealthy        int                 `json:"tasksUnhealthy,omitempty"`
 	User                  string              `json:"user,omitempty"`
 	UpgradeStrategy       *UpgradeStrategy    `json:"upgradeStrategy,omitempty"`
-	Uris                  *[]string           `json:"uris"`
+	Uris                  *[]string           `json:"uris,omitempty"`
 	Version               string              `json:"version,omitempty"`
 	VersionInfo           *VersionInfo        `json:"versionInfo,omitempty"`
 	Labels                *map[string]string  `json:"labels,omitempty"`
 	AcceptedResourceRoles []string            `json:"acceptedResourceRoles,omitempty"`
 	LastTaskFailure       *LastTaskFailure    `json:"lastTaskFailure,omitempty"`
-	Fetch                 []Fetch             `json:"fetch"`
+	Fetch                 *[]Fetch            `json:"fetch,omitempty"`
 }
 
 // ApplicationVersions is a collection of application versions for a specific app in marathon
@@ -93,6 +93,19 @@ type Fetch struct {
 	Executable bool   `json:"executable"`
 	Extract    bool   `json:"extract"`
 	Cache      bool   `json:"cache"`
+}
+
+// GetAppOpts contains a payload for Application method
+//		embed:	Embeds nested resources that match the supplied path.
+// 				You can specify this parameter multiple times with different values
+type GetAppOpts struct {
+	Embed []string `url:"embed,omitempty"`
+}
+
+// DeleteAppOpts contains a payload for DeleteApplication method
+//		force:		overrides a currently running deployment.
+type DeleteAppOpts struct {
+	Force bool `url:"force,omitempty"`
 }
 
 // NewDockerApplication creates a default docker application
@@ -386,6 +399,29 @@ func (r *Application) EmptyUris() *Application {
 	return r
 }
 
+// AddFetchURIs adds one or more fetch URIs to the application.
+//		fetchURIs:	the fetch URI(s) to add.
+func (r *Application) AddFetchURIs(fetchURIs ...Fetch) *Application {
+	if r.Fetch == nil {
+		r.EmptyFetchURIs()
+	}
+
+	fetch := *r.Fetch
+	fetch = append(fetch, fetchURIs...)
+	r.Fetch = &fetch
+
+	return r
+}
+
+// EmptyFetchURIs explicitly empties fetch URIs -- use this if you need to empty
+// fetch URIs of an application that already has fetch URIs set.
+// Setting fetch URIs to nil will keep the current value.
+func (r *Application) EmptyFetchURIs() *Application {
+	r.Fetch = &[]Fetch{}
+
+	return r
+}
+
 // String returns the json representation of this application
 func (r *Application) String() string {
 	s, err := json.MarshalIndent(r, "", "  ")
@@ -472,6 +508,25 @@ func (r *marathonClient) Application(name string) (*Application, error) {
 	return wrapper.Application, nil
 }
 
+// ApplicationBy retrieves the application configuration from marathon
+// 		name: 		the id used to identify the application
+//		opts:		GetAppOpts request payload
+func (r *marathonClient) ApplicationBy(name string, opts *GetAppOpts) (*Application, error) {
+	u, err := addOptions(buildURI(name), opts)
+	if err != nil {
+		return nil, err
+	}
+	var wrapper struct {
+		Application *Application `json:"app"`
+	}
+
+	if err := r.apiGet(u, nil, &wrapper); err != nil {
+		return nil, err
+	}
+
+	return wrapper.Application, nil
+}
+
 // ApplicationByVersion retrieves the application configuration from marathon
 // 		name: 		the id used to identify the application
 // 		version:  the version of the configuration you would like to receive
@@ -508,6 +563,12 @@ func (r *marathonClient) ApplicationOK(name string) (bool, error) {
 
 	// step: iterate the application checks and look for false
 	for _, task := range application.Tasks {
+		// Health check results may not be available immediately. Assume
+		// non-healthiness if they are missing for any task.
+		if task.HealthCheckResults == nil {
+			return false, nil
+		}
+
 		for _, check := range task.HealthCheckResults {
 			//When a task is flapping in Marathon, this is sometimes nil
 			if check == nil || !check.Alive {
@@ -545,39 +606,44 @@ func (r *marathonClient) CreateApplication(application *Application) (*Applicati
 //		name:		the id of the application
 //		timeout:	a duration of time to wait for an application to deploy
 func (r *marathonClient) WaitOnApplication(name string, timeout time.Duration) error {
-	// step: this is very naive approach - the problem with using deployment id's is
-	// one) from > 0.8.0 you can be handed a deployment Id on creation, but it may or may not exist in /v2/deployments
-	// two) there is NO WAY of checking if a deployment Id was successful (i.e. no history). So i poll /deployments
-	// as it's not there, was it successful? has it not been scheduled yet? should i wait for a second to see if the
-	// deployment starts? or have i missed it? ...
-	err := deadline(timeout, func(stop_channel chan bool) error {
-		var flick atomicSwitch
-		go func() {
-			<-stop_channel
-			close(stop_channel)
-			flick.SwitchOn()
-		}()
-		for !flick.IsSwitched() {
-			app, err := r.Application(name)
-			if apiErr, ok := err.(*APIError); ok && apiErr.ErrCode == ErrCodeNotFound {
-				continue
-			}
-			if err == nil && app.AllTaskRunning() {
+	if r.appExistAndRunning(name) {
+		return nil
+	}
+
+	ticker := time.NewTicker(time.Millisecond * 500)
+	defer ticker.Stop()
+
+	for {
+		select {
+		case <-time.After(timeout):
+			return ErrTimeoutError
+		case <-ticker.C:
+			if r.appExistAndRunning(name) {
 				return nil
 			}
-			time.Sleep(time.Duration(500) * time.Millisecond)
 		}
-		return nil
-	})
-	return err
+	}
+}
+
+func (r *marathonClient) appExistAndRunning(name string) bool {
+	app, err := r.Application(name)
+	if apiErr, ok := err.(*APIError); ok && apiErr.ErrCode == ErrCodeNotFound {
+		return false
+	}
+	if err == nil && app.AllTaskRunning() {
+		return true
+	}
+	return false
 }
 
 // DeleteApplication deletes an application from marathon
 // 		name: 		the id used to identify the application
-func (r *marathonClient) DeleteApplication(name string) (*DeploymentID, error) {
+//		force:		used to force the delete operation in case of blocked deployment
+func (r *marathonClient) DeleteApplication(name string, force bool) (*DeploymentID, error) {
+	uri := buildURIWithForceParam(name, force)
 	// step: check of the application already exists
 	deployID := new(DeploymentID)
-	if err := r.apiDelete(buildURI(name), nil, deployID); err != nil {
+	if err := r.apiDelete(uri, nil, deployID); err != nil {
 		return nil, err
 	}
 

@@ -73,6 +73,7 @@ func Funcs() map[string]ast.Function {
 		"lower":        interpolationFuncLower(),
 		"map":          interpolationFuncMap(),
 		"md5":          interpolationFuncMd5(),
+		"merge":        interpolationFuncMerge(),
 		"uuid":         interpolationFuncUUID(),
 		"replace":      interpolationFuncReplace(),
 		"sha1":         interpolationFuncSha1(),
@@ -311,33 +312,25 @@ func interpolationFuncCoalesce() ast.Function {
 // multiple lists.
 func interpolationFuncConcat() ast.Function {
 	return ast.Function{
-		ArgTypes:     []ast.Type{ast.TypeAny},
+		ArgTypes:     []ast.Type{ast.TypeList},
 		ReturnType:   ast.TypeList,
 		Variadic:     true,
-		VariadicType: ast.TypeAny,
+		VariadicType: ast.TypeList,
 		Callback: func(args []interface{}) (interface{}, error) {
 			var outputList []ast.Variable
 
 			for _, arg := range args {
-				switch arg := arg.(type) {
-				case string:
-					outputList = append(outputList, ast.Variable{Type: ast.TypeString, Value: arg})
-				case []ast.Variable:
-					for _, v := range arg {
-						switch v.Type {
-						case ast.TypeString:
-							outputList = append(outputList, v)
-						case ast.TypeList:
-							outputList = append(outputList, v)
-						case ast.TypeMap:
-							outputList = append(outputList, v)
-						default:
-							return nil, fmt.Errorf("concat() does not support lists of %s", v.Type.Printable())
-						}
+				for _, v := range arg.([]ast.Variable) {
+					switch v.Type {
+					case ast.TypeString:
+						outputList = append(outputList, v)
+					case ast.TypeList:
+						outputList = append(outputList, v)
+					case ast.TypeMap:
+						outputList = append(outputList, v)
+					default:
+						return nil, fmt.Errorf("concat() does not support lists of %s", v.Type.Printable())
 					}
-
-				default:
-					return nil, fmt.Errorf("concat() does not support %T", arg)
 				}
 			}
 
@@ -902,6 +895,26 @@ func interpolationFuncMd5() ast.Function {
 			h.Write([]byte(s))
 			hash := hex.EncodeToString(h.Sum(nil))
 			return hash, nil
+		},
+	}
+}
+
+func interpolationFuncMerge() ast.Function {
+	return ast.Function{
+		ArgTypes:     []ast.Type{ast.TypeMap},
+		ReturnType:   ast.TypeMap,
+		Variadic:     true,
+		VariadicType: ast.TypeMap,
+		Callback: func(args []interface{}) (interface{}, error) {
+			outputMap := make(map[string]ast.Variable)
+
+			for _, arg := range args {
+				for k, v := range arg.(map[string]ast.Variable) {
+					outputMap[k] = v
+				}
+			}
+
+			return outputMap, nil
 		},
 	}
 }
