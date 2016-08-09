@@ -21,6 +21,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"log"
 	"net/http"
@@ -47,7 +48,7 @@ type Marathon interface {
 	// create an application in marathon
 	CreateApplication(application *Application) (*Application, error)
 	// delete an application
-	DeleteApplication(name string) (*DeploymentID, error)
+	DeleteApplication(name string, force bool) (*DeploymentID, error)
 	// update an application in marathon
 	UpdateApplication(application *Application, force bool) (*DeploymentID, error)
 	// a list of deployments on a application
@@ -60,6 +61,8 @@ type Marathon interface {
 	Applications(url.Values) (*Applications, error)
 	// get an application by name
 	Application(name string) (*Application, error)
+	// get an application by options
+	ApplicationBy(name string, opts *GetAppOpts) (*Application, error)
 	// get an application by name and version
 	ApplicationByVersion(name, version string) (*Application, error)
 	// wait of application
@@ -86,12 +89,16 @@ type Marathon interface {
 	Groups() (*Groups, error)
 	// retrieve a specific group from marathon
 	Group(name string) (*Group, error)
+	// list all groups in marathon by options
+	GroupsBy(opts *GetGroupOpts) (*Groups, error)
+	// retrieve a specific group from marathon by options
+	GroupBy(name string, opts *GetGroupOpts) (*Group, error)
 	// create a group deployment
 	CreateGroup(group *Group) error
 	// delete a group
-	DeleteGroup(name string) (*DeploymentID, error)
+	DeleteGroup(name string, force bool) (*DeploymentID, error)
 	// update a groups
-	UpdateGroup(id string, group *Group) (*DeploymentID, error)
+	UpdateGroup(id string, group *Group, force bool) (*DeploymentID, error)
 	// check if a group exists
 	HasGroup(name string) (bool, error)
 	// wait for an group to be deployed
@@ -118,6 +125,12 @@ type Marathon interface {
 	RemoveEventsListener(channel EventsChannel)
 	// remove our self from subscriptions
 	Unsubscribe(string) error
+
+	// --- QUEUE ---
+	// get marathon lanuch queue
+	Queue() (*Queue, error)
+	// resets task launch delay of the specific application
+	DeleteQueueDelay(appID string) error
 
 	// --- MISC ---
 
@@ -152,7 +165,7 @@ type marathonClient struct {
 	subscribedToSSE bool
 	// the ip address of the client
 	ipAddress string
-	// the http server */
+	// the http server
 	eventsHTTP *http.Server
 	// the http client use for making requests
 	httpClient *http.Client
@@ -221,13 +234,20 @@ func (r *marathonClient) apiDelete(uri string, post, result interface{}) error {
 }
 
 func (r *marathonClient) apiCall(method, uri string, body, result interface{}) error {
+
 	// Get a member from the cluster
 	marathon, err := r.cluster.GetMember()
 	if err != nil {
 		return err
 	}
 
-	url := fmt.Sprintf("%s/%s", marathon, uri)
+	var url string
+
+	if r.config.DCOSToken != "" {
+		url = fmt.Sprintf("%s/%s", marathon+"/marathon", uri)
+	} else {
+		url = fmt.Sprintf("%s/%s", marathon, uri)
+	}
 
 	var jsonBody []byte
 	if body != nil {
@@ -237,18 +257,11 @@ func (r *marathonClient) apiCall(method, uri string, body, result interface{}) e
 		}
 	}
 
-	// Make the http request to Marathon
-	request, err := http.NewRequest(method, url, bytes.NewReader(jsonBody))
+	// step: create an API request
+	request, err := r.apiRequest(method, url, bytes.NewReader(jsonBody))
 	if err != nil {
 		return err
 	}
-
-	// Add any basic auth and the content headers
-	if r.config.HTTPBasicAuthUser != "" {
-		request.SetBasicAuth(r.config.HTTPBasicAuthUser, r.config.HTTPBasicPassword)
-	}
-	request.Header.Add("Content-Type", "application/json")
-	request.Header.Add("Accept", "application/json")
 
 	response, err := r.httpClient.Do(request)
 	if err != nil {
@@ -276,13 +289,30 @@ func (r *marathonClient) apiCall(method, uri string, body, result interface{}) e
 		}
 		return nil
 	}
+	return NewAPIError(response.StatusCode, respBody)
+}
 
-	apiErr, err := NewAPIError(response.StatusCode, respBody)
+// apiRequest creates a default API request
+func (r *marathonClient) apiRequest(method, url string, reader io.Reader) (*http.Request, error) {
+	// Make the http request to Marathon
+	request, err := http.NewRequest(method, url, reader)
 	if err != nil {
-		r.debugLog.Printf("apiCall(): failed to parse error response '%s' with status code %d, error: %s", respBody, response.StatusCode, err)
+		return nil, err
 	}
 
-	return apiErr
+	// Add any basic auth and the content headers
+	if r.config.HTTPBasicAuthUser != "" && r.config.HTTPBasicPassword != "" {
+		request.SetBasicAuth(r.config.HTTPBasicAuthUser, r.config.HTTPBasicPassword)
+	}
+
+	if r.config.DCOSToken != "" {
+		request.Header.Add("Authorization", "token="+r.config.DCOSToken)
+	}
+
+	request.Header.Add("Content-Type", "application/json")
+	request.Header.Add("Accept", "application/json")
+
+	return request, nil
 }
 
 var oneLogLineRegex = regexp.MustCompile(`(?m)^\s*`)

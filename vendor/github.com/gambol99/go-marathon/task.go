@@ -34,9 +34,17 @@ type Task struct {
 	HealthCheckResults []*HealthCheckResult `json:"healthCheckResults"`
 	Ports              []int                `json:"ports"`
 	ServicePorts       []int                `json:"servicePorts"`
+	SlaveID            string               `json:"slaveId"`
 	StagedAt           string               `json:"stagedAt"`
 	StartedAt          string               `json:"startedAt"`
+	IPAddresses        []*IPAddress         `json:"ipAddresses"`
 	Version            string               `json:"version"`
+}
+
+// IPAddress represents a task's IP address and protocol.
+type IPAddress struct {
+	IPAddress string `json:"ipAddress"`
+	Protocol  string `json:"protocol"`
 }
 
 // AllTasksOpts contains a payload for AllTasks method
@@ -52,12 +60,14 @@ type AllTasksOpts struct {
 type KillApplicationTasksOpts struct {
 	Host  string `url:"host,omitempty"`
 	Scale bool   `url:"scale,omitempty"`
+	Force bool   `url:"force,omitempty"`
 }
 
 // KillTaskOpts contains a payload for task killing methods
 //		scale:		Scale the app down
 type KillTaskOpts struct {
 	Scale bool `url:"scale,omitempty"`
+	Force bool `url:"force,omitempty"`
 }
 
 // HasHealthCheckResults checks if the task has any health checks
@@ -115,6 +125,9 @@ func (r *marathonClient) KillApplicationTasks(id string, opts *KillApplicationTa
 //	opts:		KillTaskOpts request payload
 func (r *marathonClient) KillTask(taskID string, opts *KillTaskOpts) (*Task, error) {
 	appName := taskID[0:strings.LastIndex(taskID, ".")]
+	appName = strings.Replace(appName, "_", "/", -1)
+	taskID = strings.Replace(taskID, "/", "_", -1)
+
 	u := fmt.Sprintf("%s/%s/tasks/%s", marathonAPIApps, appName, taskID)
 	u, err := addOptions(u, opts)
 	if err != nil {
