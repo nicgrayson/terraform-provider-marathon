@@ -1,10 +1,12 @@
 package marathon
 
 import (
+	"errors"
 	"fmt"
 	"log"
 	"reflect"
 	"strconv"
+	"time"
 
 	"github.com/gambol99/go-marathon"
 	"github.com/hashicorp/terraform/helper/schema"
@@ -375,7 +377,59 @@ func resourceMarathonApp() *schema.Resource {
 	}
 }
 
+type deploymentEvent struct {
+	id    string
+	state string
+}
+
+func readDeploymentEvents(meta interface{}, c chan deploymentEvent) error {
+	config := meta.(config)
+	client := config.Client
+
+	EventIDs := marathon.EventIDDeploymentSuccess | marathon.EventIDDeploymentFailed
+
+	events, err := client.AddEventsListener(EventIDs)
+	if err != nil {
+		log.Fatalf("Failed to register for events, %s", err)
+	}
+	defer client.RemoveEventsListener(events)
+
+	for {
+		select {
+		case event := <-events:
+			switch mEvent := event.Event.(type) {
+			case *marathon.EventDeploymentSuccess:
+				c <- deploymentEvent{mEvent.ID, event.Name}
+				return nil
+			case *marathon.EventDeploymentFailed:
+				c <- deploymentEvent{mEvent.ID, event.Name}
+				return errors.New("Received deployment_failed event from marathon")
+			}
+		}
+	}
+}
+
+func waitOnSuccessfulDeployment(c chan deploymentEvent, id string, timeout time.Duration) error {
+	select {
+	case dEvent := <-c:
+		if dEvent.id == id {
+			switch dEvent.state {
+			case "deployment_success":
+				return nil
+			case "deployment_failed":
+				return errors.New("Received deployment_failed event from marathon")
+			}
+		}
+	case <-time.After(timeout):
+		return errors.New("Deployment timeout reached. Did not receive any deployment events")
+	}
+	return nil
+}
+
 func resourceMarathonAppCreate(d *schema.ResourceData, meta interface{}) error {
+	c := make(chan deploymentEvent, 1)
+	go readDeploymentEvents(meta, c)
+
 	config := meta.(config)
 	client := config.Client
 
@@ -391,7 +445,7 @@ func resourceMarathonAppCreate(d *schema.ResourceData, meta interface{}) error {
 	setSchemaFieldsForApp(application, d)
 
 	for _, deploymentID := range application.DeploymentIDs() {
-		err = client.WaitOnDeployment(deploymentID.DeploymentID, config.DefaultDeploymentTimeout)
+		err = waitOnSuccessfulDeployment(c, deploymentID.DeploymentID, config.DefaultDeploymentTimeout)
 		if err != nil {
 			log.Println("[ERROR] waiting for application for deployment", deploymentID, err)
 			return err
@@ -619,6 +673,9 @@ func givenFreePortsDoesNotEqualAllocated(d *schema.ResourceData, app *marathon.A
 }
 
 func resourceMarathonAppUpdate(d *schema.ResourceData, meta interface{}) error {
+	c := make(chan deploymentEvent, 1)
+	go readDeploymentEvents(meta, c)
+
 	config := meta.(config)
 	client := config.Client
 
@@ -629,7 +686,7 @@ func resourceMarathonAppUpdate(d *schema.ResourceData, meta interface{}) error {
 		return err
 	}
 
-	err = client.WaitOnDeployment(deploymentID.DeploymentID, config.DefaultDeploymentTimeout)
+	err = waitOnSuccessfulDeployment(c, deploymentID.DeploymentID, config.DefaultDeploymentTimeout)
 	return err
 }
 
