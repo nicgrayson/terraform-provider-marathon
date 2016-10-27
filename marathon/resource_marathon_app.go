@@ -491,16 +491,16 @@ func setSchemaFieldsForApp(app *marathon.Application, d *schema.ResourceData) {
 	d.Set("accepted_resource_roles", &app.AcceptedResourceRoles)
 	d.SetPartial("accepted_resource_roles")
 
-	d.Set("args", &app.Args)
+	d.Set("args", app.Args)
 	d.SetPartial("args")
 
-	d.Set("backoff_seconds", &app.BackoffSeconds)
+	d.Set("backoff_seconds", app.BackoffSeconds)
 	d.SetPartial("backoff_seconds")
 
-	d.Set("backoff_factor", &app.BackoffFactor)
+	d.Set("backoff_factor", app.BackoffFactor)
 	d.SetPartial("backoff_factor")
 
-	d.Set("cmd", &app.Cmd)
+	d.Set("cmd", app.Cmd)
 	d.SetPartial("cmd")
 
 	if app.Constraints != nil && len(*app.Constraints) > 0 {
@@ -515,7 +515,7 @@ func setSchemaFieldsForApp(app *marathon.Application, d *schema.ResourceData) {
 			cMaps[idx] = cMap
 		}
 		constraints := []interface{}{map[string]interface{}{"constraint": cMaps}}
-		d.Set("constraints", &constraints)
+		d.Set("constraints", constraints)
 	} else {
 		d.Set("constraints", nil)
 	}
@@ -580,13 +580,13 @@ func setSchemaFieldsForApp(app *marathon.Application, d *schema.ResourceData) {
 	}
 	d.SetPartial("container")
 
-	d.Set("cpus", &app.CPUs)
+	d.Set("cpus", app.CPUs)
 	d.SetPartial("cpus")
 
 	d.Set("dependencies", &app.Dependencies)
 	d.SetPartial("dependencies")
 
-	d.Set("env", &app.Env)
+	d.Set("env", app.Env)
 	d.SetPartial("env")
 
 	if app.HealthChecks != nil && len(*app.HealthChecks) > 0 {
@@ -612,21 +612,21 @@ func setSchemaFieldsForApp(app *marathon.Application, d *schema.ResourceData) {
 
 	d.SetPartial("health_checks")
 
-	d.Set("instances", &app.Instances)
+	d.Set("instances", app.Instances)
 	d.SetPartial("instances")
 
-	d.Set("labels", &app.Labels)
+	d.Set("labels", app.Labels)
 	d.SetPartial("labels")
 
-	d.Set("mem", &app.Mem)
+	d.Set("mem", app.Mem)
 	d.SetPartial("mem")
 
 	if givenFreePortsDoesNotEqualAllocated(d, app) {
-		d.Set("ports", &app.Ports)
+		d.Set("ports", app.Ports)
 	}
 	d.SetPartial("ports")
 
-	d.Set("require_ports", &app.RequirePorts)
+	d.Set("require_ports", app.RequirePorts)
 	d.SetPartial("require_ports")
 
 	if app.UpgradeStrategy != nil {
@@ -639,20 +639,20 @@ func setSchemaFieldsForApp(app *marathon.Application, d *schema.ResourceData) {
 	}
 	d.SetPartial("upgrade_strategy")
 
-	d.Set("uris", &app.Uris)
+	d.Set("uris", app.Uris)
 	d.SetPartial("uris")
 
 	// App
-	d.Set("executor", &app.Executor)
+	d.Set("executor", app.Executor)
 	d.SetPartial("executor")
 
-	d.Set("disk", &app.Disk)
+	d.Set("disk", app.Disk)
 	d.SetPartial("disk")
 
-	d.Set("user", &app.User)
+	d.Set("user", app.User)
 	d.SetPartial("user")
 
-	d.Set("version", &app.Version)
+	d.Set("version", app.Version)
 	d.SetPartial("version")
 
 }
