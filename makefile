@@ -13,10 +13,14 @@ build: vet osx linux
 	go install .
 
 test: build
-	big inventory add marathon
-	big up -d marathon
+	docker pull python:3
+	docker-compose build test
+	docker-compose pull
+	docker-compose up -d marathon mesos-master mesos-slave zookeeper
 	sleep 5
-	TF_LOG=TRACE TF_LOG_PATH=./test-sh-tf.log TF_ACC=yes MARATHON_URL=https://marathon.dev.banno.com go test ./marathon -v
+	docker-compose up test
+	docker-compose kill
+	docker-compose rm -f
 
 release:
 	./bin/release.sh
