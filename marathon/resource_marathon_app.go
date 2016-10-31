@@ -382,9 +382,8 @@ type deploymentEvent struct {
 	state string
 }
 
-func readDeploymentEvents(meta interface{}, c chan deploymentEvent) error {
-	config := meta.(config)
-	client := config.Client
+func readDeploymentEvents(meta *marathon.Marathon, c chan deploymentEvent, ready chan bool) error {
+	client := *meta
 
 	EventIDs := marathon.EventIDDeploymentSuccess | marathon.EventIDDeploymentFailed
 
@@ -393,6 +392,8 @@ func readDeploymentEvents(meta interface{}, c chan deploymentEvent) error {
 		log.Fatalf("Failed to register for events, %s", err)
 	}
 	defer client.RemoveEventsListener(events)
+	defer close(c)
+	ready <- true
 
 	for {
 		select {
@@ -400,10 +401,8 @@ func readDeploymentEvents(meta interface{}, c chan deploymentEvent) error {
 			switch mEvent := event.Event.(type) {
 			case *marathon.EventDeploymentSuccess:
 				c <- deploymentEvent{mEvent.ID, event.Name}
-				return nil
 			case *marathon.EventDeploymentFailed:
 				c <- deploymentEvent{mEvent.ID, event.Name}
-				return errors.New("Received deployment_failed event from marathon")
 			}
 		}
 	}
@@ -427,11 +426,17 @@ func waitOnSuccessfulDeployment(c chan deploymentEvent, id string, timeout time.
 }
 
 func resourceMarathonAppCreate(d *schema.ResourceData, meta interface{}) error {
-	c := make(chan deploymentEvent, 1)
-	go readDeploymentEvents(meta, c)
-
 	config := meta.(config)
 	client := config.Client
+
+	c := make(chan deploymentEvent, 100)
+	ready := make(chan bool)
+	go readDeploymentEvents(&client, c, ready)
+	select {
+	case <-ready:
+	case <-time.After(60 * time.Second):
+		return errors.New("Timeout getting an EventListener")
+	}
 
 	application := mutateResourceToApplication(d)
 
@@ -673,11 +678,17 @@ func givenFreePortsDoesNotEqualAllocated(d *schema.ResourceData, app *marathon.A
 }
 
 func resourceMarathonAppUpdate(d *schema.ResourceData, meta interface{}) error {
-	c := make(chan deploymentEvent, 1)
-	go readDeploymentEvents(meta, c)
-
 	config := meta.(config)
 	client := config.Client
+
+	c := make(chan deploymentEvent, 100)
+	ready := make(chan bool)
+	go readDeploymentEvents(&client, c, ready)
+	select {
+	case <-ready:
+	case <-time.After(60 * time.Second):
+		return errors.New("Timeout getting an EventListener")
+	}
 
 	application := mutateResourceToApplication(d)
 
