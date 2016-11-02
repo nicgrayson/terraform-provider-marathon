@@ -622,7 +622,7 @@ func setSchemaFieldsForApp(app *marathon.Application, d *schema.ResourceData) {
 	d.Set("env", app.Env)
 	d.SetPartial("env")
 
-	d.Set("fetch", &app.Fetch)
+	d.Set("fetch", app.Fetch)
 	d.SetPartial("fetch")
 
 	if app.Fetch != nil && len(*app.Fetch) > 0 {
