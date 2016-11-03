@@ -239,6 +239,34 @@ func resourceMarathonApp() *schema.Resource {
 				Optional: true,
 				ForceNew: false,
 			},
+			"fetch": &schema.Schema{
+				Type:     schema.TypeList,
+				Optional: true,
+				ForceNew: false,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"uri": &schema.Schema{
+							Type:     schema.TypeString,
+							Optional: true,
+						},
+						"cache": &schema.Schema{
+							Type:     schema.TypeBool,
+							Optional: true,
+							Default:  false,
+						},
+						"executable": &schema.Schema{
+							Type:     schema.TypeBool,
+							Optional: true,
+							Default:  false,
+						},
+						"extract": &schema.Schema{
+							Type:     schema.TypeBool,
+							Optional: true,
+							Default:  false,
+						},
+					},
+				},
+			},
 			"health_checks": &schema.Schema{
 				Type:     schema.TypeList,
 				Optional: true,
@@ -594,6 +622,26 @@ func setSchemaFieldsForApp(app *marathon.Application, d *schema.ResourceData) {
 	d.Set("env", app.Env)
 	d.SetPartial("env")
 
+	d.Set("fetch", app.Fetch)
+	d.SetPartial("fetch")
+
+	if app.Fetch != nil && len(*app.Fetch) > 0 {
+		fetches := make([]map[string]interface{}, len(*app.Fetch))
+		for i, fetch := range *app.Fetch {
+			fetches[i] = map[string]interface{}{
+				"uri":        fetch.URI,
+				"cache":      fetch.Cache,
+				"executable": fetch.Executable,
+				"extract":    fetch.Extract,
+			}
+		}
+		d.Set("fetch", &[]interface{}{fetches})
+	} else {
+		d.Set("fetch", nil)
+	}
+
+	d.SetPartial("fetch")
+
 	if app.HealthChecks != nil && len(*app.HealthChecks) > 0 {
 		healthChecks := make([]map[string]interface{}, len(*app.HealthChecks))
 		for idx, healthCheck := range *app.HealthChecks {
@@ -899,6 +947,31 @@ func mutateResourceToApplication(d *schema.ResourceData) *marathon.Application {
 	} else {
 		env := make(map[string]string, 0)
 		application.Env = &env
+	}
+
+	if v, ok := d.GetOk("fetch.#"); ok {
+		fetch := make([]marathon.Fetch, v.(int))
+
+		for i := range fetch {
+			fetchMap := d.Get(fmt.Sprintf("fetch.%d", i)).(map[string]interface{})
+
+			if val, ok := fetchMap["uri"].(string); ok {
+				fetch[i].URI = val
+			}
+			if val, ok := fetchMap["cache"].(bool); ok {
+				fetch[i].Cache = val
+			}
+			if val, ok := fetchMap["executable"].(bool); ok {
+				fetch[i].Executable = val
+			}
+			if val, ok := fetchMap["extract"].(bool); ok {
+				fetch[i].Extract = val
+			}
+		}
+
+		application.Fetch = &fetch
+	} else {
+		application.Fetch = nil
 	}
 
 	if v, ok := d.GetOk("health_checks.0.health_check.#"); ok {
