@@ -1,3 +1,7 @@
+# 1.0.2
+
+- Updating go-marathon to `v0.3.0`
+
 # 1.0.1
 
 BUILD
