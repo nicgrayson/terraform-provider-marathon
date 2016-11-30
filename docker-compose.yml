@@ -30,6 +30,7 @@ marathon:
   dns:
     - dns
     - 172.17.0.1
+    - 172.18.0.1
 
 mesos-master:
   image: registry.banno-internal.com/mesos-master:1.0
@@ -49,6 +50,7 @@ mesos-master:
 
 mesos-agent1:
   image: registry.banno-internal.com/mesos-agent:1.0
+  command: mesos-agent --resources=cpus:4;mem:24576;disk:409600
   ports:
     - 5151:5151
   environment:
@@ -70,7 +72,7 @@ mesos-agent1:
 
 mesos-agent2:
   image: registry.banno-internal.com/mesos-agent:1.0
-  command: mesos-agent --resources=ports:[41000-42000]
+  command: mesos-agent --resources=ports:[41000-42000];cpus:4;mem:24576;disk:409600
   ports:
     - 5152:5152
   environment:
