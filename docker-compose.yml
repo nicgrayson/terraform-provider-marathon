@@ -4,8 +4,8 @@ dns:
     - '53:53'
     - 53:53/udp
   environment:
-    DEV_BANNO_IP:
-    LOCAL_BANNO_IP:
+    DEV_BANNO_IP: 192.168.99.100
+    LOCAL_BANNO_IP: 192.168.99.1
 
 zookeeper:
   image: registry.banno-internal.com/zookeeper:3.4.8
@@ -30,7 +30,6 @@ marathon:
   dns:
     - dns
     - 172.17.0.1
-    - 172.18.0.1
 
 mesos-master:
   image: registry.banno-internal.com/mesos-master:1.0
