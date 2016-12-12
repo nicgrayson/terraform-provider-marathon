@@ -15,8 +15,9 @@ type ContextGraphWalker struct {
 	NullGraphWalker
 
 	// Configurable values
-	Context   *Context
-	Operation walkOperation
+	Context    *Context
+	Operation  walkOperation
+	DebugGraph *DebugGraph
 
 	// Outputs, do not set these. Do not read these while the graph
 	// is being walked.
@@ -68,12 +69,11 @@ func (w *ContextGraphWalker) EnterPath(path []string) EvalContext {
 		PathValue:           path,
 		Hooks:               w.Context.hooks,
 		InputValue:          w.Context.uiInput,
-		Providers:           w.Context.providers,
+		Components:          w.Context.components,
 		ProviderCache:       w.providerCache,
 		ProviderConfigCache: w.providerConfigCache,
 		ProviderInputConfig: w.Context.providerInputConfig,
 		ProviderLock:        &w.providerLock,
-		Provisioners:        w.Context.provisioners,
 		ProvisionerCache:    w.provisionerCache,
 		ProvisionerLock:     &w.provisionerLock,
 		DiffValue:           w.Context.diff,
@@ -143,6 +143,10 @@ func (w *ContextGraphWalker) ExitEvalTree(
 	}
 
 	return nil
+}
+
+func (w *ContextGraphWalker) Debug() *DebugGraph {
+	return w.DebugGraph
 }
 
 func (w *ContextGraphWalker) init() {
