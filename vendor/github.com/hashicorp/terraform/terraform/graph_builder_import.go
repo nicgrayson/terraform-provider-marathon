@@ -38,7 +38,7 @@ func (b *ImportGraphBuilder) Steps() []GraphTransformer {
 
 	steps := []GraphTransformer{
 		// Create all our resources from the configuration and state
-		&ConfigTransformer{Module: mod},
+		&ConfigTransformerOld{Module: mod},
 
 		// Add the import steps
 		&ImportStateTransformer{Targets: b.ImportTargets},
@@ -46,7 +46,7 @@ func (b *ImportGraphBuilder) Steps() []GraphTransformer {
 		// Provider-related transformations
 		&MissingProviderTransformer{Providers: b.Providers},
 		&ProviderTransformer{},
-		&DisableProviderTransformer{},
+		&DisableProviderTransformerOld{},
 		&PruneProviderTransformer{},
 
 		// Single root
