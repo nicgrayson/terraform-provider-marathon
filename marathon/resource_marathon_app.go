@@ -88,6 +88,18 @@ func resourceMarathonApp() *schema.Resource {
 					},
 				},
 			},
+			"ipaddress": &schema.Schema{
+				Type:     schema.TypeList,
+				Optional: true,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"networkname": &schema.Schema{
+							Type:     schema.TypeString,
+							Optional: true,
+						},
+					},
+				},
+			},
 			"container": &schema.Schema{
 				Type:     schema.TypeList,
 				Optional: true,
@@ -554,6 +566,14 @@ func setSchemaFieldsForApp(app *marathon.Application, d *schema.ResourceData) {
 	}
 	d.SetPartial("constraints")
 
+	if app.IPAddressPerTask != nil {
+		ipAddress := app.IPAddressPerTask
+
+		ipAddressMap := make(map[string]interface{})
+		ipAddressMap["networkname"] = ipAddress.NetworkName
+		d.Set("ipaddress", &[]interface{}{ipAddressMap})
+	}
+
 	if app.Container != nil {
 		container := app.Container
 
@@ -829,6 +849,20 @@ func mutateResourceToApplication(d *schema.ResourceData) *marathon.Application {
 		application.Constraints = &constraints
 	} else {
 		application.Constraints = nil
+	}
+
+	if v, ok := d.GetOk("ipaddress.0.networkname"); ok {
+		t := v.(string)
+
+		discovery := new(marathon.Discovery)
+		discovery = discovery.EmptyPorts()
+
+		ipAddressPerTask := new(marathon.IPAddressPerTask)
+		ipAddressPerTask.Discovery = *discovery
+
+		ipAddressPerTask.NetworkName = t
+
+		application = application.SetIPAddressPerTask(*ipAddressPerTask)
 	}
 
 	if v, ok := d.GetOk("container.0.type"); ok {

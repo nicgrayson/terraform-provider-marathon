@@ -1,12 +1,13 @@
 package marathon
 
 import (
-	"github.com/gambol99/go-marathon"
-	"github.com/hashicorp/terraform/helper/schema"
-	"github.com/hashicorp/terraform/terraform"
 	"log"
 	"net/http"
 	"time"
+
+	"github.com/gambol99/go-marathon"
+	"github.com/hashicorp/terraform/helper/schema"
+	"github.com/hashicorp/terraform/terraform"
 )
 
 // Provider is the provider for terraform
