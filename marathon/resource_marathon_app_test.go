@@ -4,15 +4,33 @@ import (
 	"fmt"
 	"io/ioutil"
 	"log"
+	"os"
 	"regexp"
 	"time"
 
 	"github.com/gambol99/go-marathon"
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/terraform"
+	"github.com/hashicorp/terraform/helper/schema"
 
 	"testing"
 )
+
+var testAccProviders map[string]terraform.ResourceProvider
+var testAccProvider *schema.Provider
+
+func init() {
+	testAccProvider = Provider().(*schema.Provider)
+	testAccProviders = map[string]terraform.ResourceProvider{
+		"marathon": testAccProvider,
+	}
+}
+
+func testAccPreCheck(t *testing.T) {
+	if v := os.Getenv("MARATHON_URL"); v == "" {
+		t.Fatal("MARATHON_URL must be set for the acceptance tests to work.")
+	}
+}
 
 func readExampleAppConfiguration() string {
 	bytes, err := ioutil.ReadFile("../test/example.tf")

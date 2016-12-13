@@ -28,61 +28,21 @@ func (t *hclConfigurable) Config() (*Config, error) {
 		"variable": struct{}{},
 	}
 
-	type hclVariable struct {
-		Default      interface{}
-		Description  string
-		DeclaredType string   `hcl:"type"`
-		Fields       []string `hcl:",decodedFields"`
-	}
-
-	var rawConfig struct {
-		Variable map[string]*hclVariable
-	}
-
 	// Top-level item should be the object list
 	list, ok := t.Root.Node.(*ast.ObjectList)
 	if !ok {
 		return nil, fmt.Errorf("error parsing: file doesn't contain a root object")
 	}
 
-	if err := hcl.DecodeObject(&rawConfig, list); err != nil {
-		return nil, err
-	}
-
-	// Start building up the actual configuration. We start with
-	// variables.
-	// TODO(mitchellh): Make function like loadVariablesHcl so that
-	// duplicates aren't overriden
+	// Start building up the actual configuration.
 	config := new(Config)
-	if len(rawConfig.Variable) > 0 {
-		config.Variables = make([]*Variable, 0, len(rawConfig.Variable))
-		for k, v := range rawConfig.Variable {
-			// Defaults turn into a slice of map[string]interface{} and
-			// we need to make sure to convert that down into the
-			// proper type for Config.
-			if ms, ok := v.Default.([]map[string]interface{}); ok {
-				def := make(map[string]interface{})
-				for _, m := range ms {
-					for k, v := range m {
-						def[k] = v
-					}
-				}
 
-				v.Default = def
-			}
-
-			newVar := &Variable{
-				Name:         k,
-				DeclaredType: v.DeclaredType,
-				Default:      v.Default,
-				Description:  v.Description,
-			}
-
-			if err := newVar.ValidateTypeAndDefault(); err != nil {
-				return nil, err
-			}
-
-			config.Variables = append(config.Variables, newVar)
+	// Build the variables
+	if vars := list.Filter("variable"); len(vars.Items) > 0 {
+		var err error
+		config.Variables, err = loadVariablesHcl(vars)
+		if err != nil {
+			return nil, err
 		}
 	}
 
@@ -323,7 +283,8 @@ func loadModulesHcl(list *ast.ObjectList) ([]*Module, error) {
 func loadOutputsHcl(list *ast.ObjectList) ([]*Output, error) {
 	list = list.Children()
 	if len(list.Items) == 0 {
-		return nil, nil
+		return nil, fmt.Errorf(
+			"'output' must be followed by exactly one string: a name")
 	}
 
 	// Go through each object and turn it into an actual result.
@@ -348,6 +309,84 @@ func loadOutputsHcl(list *ast.ObjectList) ([]*Output, error) {
 			Name:      n,
 			RawConfig: rawConfig,
 		})
+	}
+
+	return result, nil
+}
+
+// LoadVariablesHcl recurses into the given HCL object and turns
+// it into a list of variables.
+func loadVariablesHcl(list *ast.ObjectList) ([]*Variable, error) {
+	list = list.Children()
+	if len(list.Items) == 0 {
+		return nil, fmt.Errorf(
+			"'variable' must be followed by exactly one strings: a name")
+	}
+
+	// hclVariable is the structure each variable is decoded into
+	type hclVariable struct {
+		DeclaredType string `hcl:"type"`
+		Default      interface{}
+		Description  string
+		Fields       []string `hcl:",decodedFields"`
+	}
+
+	// Go through each object and turn it into an actual result.
+	result := make([]*Variable, 0, len(list.Items))
+	for _, item := range list.Items {
+		// Clean up items from JSON
+		unwrapHCLObjectKeysFromJSON(item, 1)
+
+		// Verify the keys
+		if len(item.Keys) != 1 {
+			return nil, fmt.Errorf(
+				"position %s: 'variable' must be followed by exactly one strings: a name",
+				item.Pos())
+		}
+
+		n := item.Keys[0].Token.Value().(string)
+
+		/*
+			// TODO: catch extra fields
+			// Decode into raw map[string]interface{} so we know ALL fields
+			var config map[string]interface{}
+			if err := hcl.DecodeObject(&config, item.Val); err != nil {
+				return nil, err
+			}
+		*/
+
+		// Decode into hclVariable to get typed values
+		var hclVar hclVariable
+		if err := hcl.DecodeObject(&hclVar, item.Val); err != nil {
+			return nil, err
+		}
+
+		// Defaults turn into a slice of map[string]interface{} and
+		// we need to make sure to convert that down into the
+		// proper type for Config.
+		if ms, ok := hclVar.Default.([]map[string]interface{}); ok {
+			def := make(map[string]interface{})
+			for _, m := range ms {
+				for k, v := range m {
+					def[k] = v
+				}
+			}
+
+			hclVar.Default = def
+		}
+
+		// Build the new variable and do some basic validation
+		newVar := &Variable{
+			Name:         n,
+			DeclaredType: hclVar.DeclaredType,
+			Default:      hclVar.Default,
+			Description:  hclVar.Description,
+		}
+		if err := newVar.ValidateTypeAndDefault(); err != nil {
+			return nil, err
+		}
+
+		result = append(result, newVar)
 	}
 
 	return result, nil
@@ -456,6 +495,7 @@ func loadDataResourcesHcl(list *ast.ObjectList) ([]*Resource, error) {
 		// Remove the fields we handle specially
 		delete(config, "depends_on")
 		delete(config, "provider")
+		delete(config, "count")
 
 		rawConfig, err := NewRawConfig(config)
 		if err != nil {
@@ -554,6 +594,9 @@ func loadManagedResourcesHcl(list *ast.ObjectList) ([]*Resource, error) {
 					"Example: \"provisioner\": [ { \"local-exec\": ... } ]",
 				item.Pos())
 		}
+
+		// Fix up JSON input
+		unwrapHCLObjectKeysFromJSON(item, 2)
 
 		if len(item.Keys) != 2 {
 			return nil, fmt.Errorf(
@@ -830,4 +873,43 @@ func checkHCLKeys(node ast.Node, valid []string) error {
 	}
 
 	return result
+}
+
+// unwrapHCLObjectKeysFromJSON cleans up an edge case that can occur when
+// parsing JSON as input: if we're parsing JSON then directly nested
+// items will show up as additional "keys".
+//
+// For objects that expect a fixed number of keys, this breaks the
+// decoding process. This function unwraps the object into what it would've
+// looked like if it came directly from HCL by specifying the number of keys
+// you expect.
+//
+// Example:
+//
+// { "foo": { "baz": {} } }
+//
+// Will show up with Keys being: []string{"foo", "baz"}
+// when we really just want the first two. This function will fix this.
+func unwrapHCLObjectKeysFromJSON(item *ast.ObjectItem, depth int) {
+	if len(item.Keys) > depth && item.Keys[0].Token.JSON {
+		for len(item.Keys) > depth {
+			// Pop off the last key
+			n := len(item.Keys)
+			key := item.Keys[n-1]
+			item.Keys[n-1] = nil
+			item.Keys = item.Keys[:n-1]
+
+			// Wrap our value in a list
+			item.Val = &ast.ObjectType{
+				List: &ast.ObjectList{
+					Items: []*ast.ObjectItem{
+						&ast.ObjectItem{
+							Keys: []*ast.ObjectKey{key},
+							Val:  item.Val,
+						},
+					},
+				},
+			}
+		}
+	}
 }
