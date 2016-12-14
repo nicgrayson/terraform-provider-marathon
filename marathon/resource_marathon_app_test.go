@@ -10,8 +10,8 @@ import (
 
 	"github.com/gambol99/go-marathon"
 	"github.com/hashicorp/terraform/helper/resource"
-	"github.com/hashicorp/terraform/terraform"
 	"github.com/hashicorp/terraform/helper/schema"
+	"github.com/hashicorp/terraform/terraform"
 
 	"testing"
 )
@@ -61,6 +61,9 @@ func TestAccMarathonApp_basic(t *testing.T) {
 			if *a.Instances != 1 {
 				return fmt.Errorf("AppCreate: Wrong number of instances %#v", app)
 			}
+			if a.IPAddressPerTask.NetworkName != "default" {
+				return fmt.Errorf("AppCreate: ipAddress networkName is not set properly: %#v", app)
+			}
 			return nil
 		}
 	}
@@ -69,7 +72,9 @@ func TestAccMarathonApp_basic(t *testing.T) {
 		return func(s *terraform.State) error {
 			if *a.Instances != 2 {
 				return fmt.Errorf("AppUpdate: Wrong number of instances %#v", app)
-
+			}
+			if a.IPAddressPerTask.NetworkName != "default" {
+				return fmt.Errorf("AppUpdate: ipAddress networkName is not set properly: %#v", app)
 			}
 			return nil
 		}

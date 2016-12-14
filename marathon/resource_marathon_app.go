@@ -93,7 +93,7 @@ func resourceMarathonApp() *schema.Resource {
 				Optional: true,
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
-						"networkname": &schema.Schema{
+						"network_name": &schema.Schema{
 							Type:     schema.TypeString,
 							Optional: true,
 						},
@@ -570,7 +570,7 @@ func setSchemaFieldsForApp(app *marathon.Application, d *schema.ResourceData) {
 		ipAddress := app.IPAddressPerTask
 
 		ipAddressMap := make(map[string]interface{})
-		ipAddressMap["networkname"] = ipAddress.NetworkName
+		ipAddressMap["network_name"] = ipAddress.NetworkName
 		d.Set("ipaddress", &[]interface{}{ipAddressMap})
 	}
 
@@ -851,7 +851,7 @@ func mutateResourceToApplication(d *schema.ResourceData) *marathon.Application {
 		application.Constraints = nil
 	}
 
-	if v, ok := d.GetOk("ipaddress.0.networkname"); ok {
+	if v, ok := d.GetOk("ipaddress.0.network_name"); ok {
 		t := v.(string)
 
 		discovery := new(marathon.Discovery)
