@@ -1,3 +1,7 @@
+# 1.0.4
+
+- Updated terraform vendored deps to 0.7.13
+
 # 1.0.3
 
 - Add support for `fetch` configuration ([marathon docs](http://mesosphere.github.io/marathon/docs/rest-api.html#post-v2-apps), [mesos docs](http://mesos.apache.org/documentation/latest/fetcher/))
