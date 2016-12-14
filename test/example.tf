@@ -85,5 +85,9 @@ resource "marathon_app" "app-create-example" {
     minimum_health_capacity = "0.5"
   }
 
+  ipaddress {
+    network_name = "default"
+  }
+
   # dependencies = ["/test"]
 }
