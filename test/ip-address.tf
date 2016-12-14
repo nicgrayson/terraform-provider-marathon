@@ -1,4 +1,4 @@
-resource "marathon_app" "app-create-example" {
+resource "marathon_app" "ip-address-create-example" {
   app_id = "/app-create-example"
 
   cmd = "env && python3 -m http.server 8080"
@@ -79,10 +79,13 @@ resource "marathon_app" "app-create-example" {
     test = "abc"
   }
   mem = 50
-  ports = [0, 0]
 
   upgrade_strategy {
     minimum_health_capacity = "0.5"
+  }
+
+  ipaddress {
+    network_name = "default"
   }
 
   # dependencies = ["/test"]

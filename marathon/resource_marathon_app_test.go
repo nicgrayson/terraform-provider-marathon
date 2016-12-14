@@ -32,24 +32,22 @@ func testAccPreCheck(t *testing.T) {
 	}
 }
 
-func readExampleAppConfiguration() string {
-	bytes, err := ioutil.ReadFile("../test/example.tf")
+func readExampleAppConfiguration(config string) string {
+	bytes, err := ioutil.ReadFile(fmt.Sprintf("../test/%s.tf", config))
 	if err != nil {
 		log.Fatal(err)
 	}
-
 	return string(bytes)
 }
 
 func readExampleAppConfigurationAndUpdateInstanceCount(count int) string {
-	config := readExampleAppConfiguration()
+	config := readExampleAppConfiguration("example")
 	re := regexp.MustCompile("instances = \\d+")
 	updated := re.ReplaceAllString(config, fmt.Sprintf("instances = %d", count))
 	return updated
 }
 
 func TestAccMarathonApp_basic(t *testing.T) {
-
 	var a marathon.Application
 
 	testCheckCreate := func(app *marathon.Application) resource.TestCheckFunc {
@@ -61,9 +59,6 @@ func TestAccMarathonApp_basic(t *testing.T) {
 			if *a.Instances != 1 {
 				return fmt.Errorf("AppCreate: Wrong number of instances %#v", app)
 			}
-			if a.IPAddressPerTask.NetworkName != "default" {
-				return fmt.Errorf("AppCreate: ipAddress networkName is not set properly: %#v", app)
-			}
 			return nil
 		}
 	}
@@ -72,9 +67,6 @@ func TestAccMarathonApp_basic(t *testing.T) {
 		return func(s *terraform.State) error {
 			if *a.Instances != 2 {
 				return fmt.Errorf("AppUpdate: Wrong number of instances %#v", app)
-			}
-			if a.IPAddressPerTask.NetworkName != "default" {
-				return fmt.Errorf("AppUpdate: ipAddress networkName is not set properly: %#v", app)
 			}
 			return nil
 		}
@@ -86,7 +78,7 @@ func TestAccMarathonApp_basic(t *testing.T) {
 		CheckDestroy: testAccCheckMarathonAppDestroy,
 		Steps: []resource.TestStep{
 			resource.TestStep{
-				Config: readExampleAppConfiguration(),
+				Config: readExampleAppConfiguration("example"),
 				Check: resource.ComposeTestCheckFunc(
 					testAccReadApp("marathon_app.app-create-example", &a),
 					testCheckCreate(&a),
@@ -97,6 +89,21 @@ func TestAccMarathonApp_basic(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccReadApp("marathon_app.app-create-example", &a),
 					testCheckUpdate(&a),
+				),
+			},
+		},
+	})
+}
+
+func TestAccMarathonApp_ipAddress(t *testing.T) {
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { testAccPreCheck(t) },
+		Providers:    testAccProviders,
+		Steps: []resource.TestStep{
+			resource.TestStep{
+				Config: readExampleAppConfiguration("ip-address"),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("marathon_app.ip-address-create-example", "ipaddress.0.network_name", "default"),
 				),
 			},
 		},
