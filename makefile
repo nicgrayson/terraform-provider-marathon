@@ -21,7 +21,7 @@ endif
 
 test: install
 	docker-compose -f $(docker_compose_file) up -d
-	sleep 5
+	sleep 10
 	TF_LOG=TRACE TF_LOG_PATH=./test-sh-tf.log TF_ACC=yes MARATHON_URL=http://dev.banno.com:8080 go test ./marathon -v
 	docker-compose -f $(docker_compose_file) kill
 	docker-compose -f $(docker_compose_file) rm -f
