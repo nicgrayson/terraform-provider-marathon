@@ -257,7 +257,7 @@ func (r *marathonClient) apiCall(method, uri string, body, result interface{}) e
 		// step: Create the endpoint url
 		url := fmt.Sprintf("%s/%s", member, uri)
 		if r.config.DCOSToken != "" {
-			url = fmt.Sprintf("%s/%s", member+"/marathon", uri)
+			url = fmt.Sprintf("%s/%s", member, uri)
 		}
 
 		// step: marshall the request to json
