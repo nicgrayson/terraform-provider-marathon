@@ -1,3 +1,7 @@
+## 1.1.1
+
+Added support for DCOS authentication and arbitrary marathon URL.
+
 ## 1.1.0
 
 - Added support for `networkName` to be specified for a task. [Docs](https://mesosphere.github.io/marathon/docs/ip-per-task.html)
