@@ -52,7 +52,8 @@ func (n *NodeAbstractResource) ReferenceableName() []string {
 		id = n.Config.Id()
 	} else if n.Addr != nil {
 		addrCopy := n.Addr.Copy()
-		addrCopy.Index = -1
+		addrCopy.Path = nil // ReferenceTransformer handles paths
+		addrCopy.Index = -1 // We handle indexes below
 		id = addrCopy.String()
 	} else {
 		// No way to determine our type.name, just return
@@ -165,4 +166,15 @@ func (n *NodeAbstractResource) AttachResourceState(s *ResourceState) {
 // GraphNodeAttachResourceConfig
 func (n *NodeAbstractResource) AttachResourceConfig(c *config.Resource) {
 	n.Config = c
+}
+
+// GraphNodeDotter impl.
+func (n *NodeAbstractResource) DotNode(name string, opts *dag.DotOpts) *dag.DotNode {
+	return &dag.DotNode{
+		Name: name,
+		Attrs: map[string]string{
+			"label": n.Name(),
+			"shape": "box",
+		},
+	}
 }
