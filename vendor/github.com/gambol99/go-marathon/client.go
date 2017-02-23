@@ -256,7 +256,9 @@ func (r *marathonClient) apiCall(method, uri string, body, result interface{}) e
 
 		// step: Create the endpoint url
 		url := fmt.Sprintf("%s/%s", member, uri)
-		if r.config.DCOSToken != "" {
+		if r.config.DCOSToken != "" && r.config.DCOSPath != "" {
+			url = fmt.Sprintf("%s/%s/%s", member, r.config.DCOSPath, uri)
+		} else if r.config.DCOSToken != "" {
 			url = fmt.Sprintf("%s/%s", member+"/marathon", uri)
 		}
 

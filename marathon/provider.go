@@ -44,6 +44,18 @@ func Provider() terraform.ResourceProvider {
 				Default:     "",
 				Description: "HTTP basic auth password",
 			},
+			"dcos_token": &schema.Schema{
+				Type:        schema.TypeString,
+				Optional:    true,
+				Default:     "",
+				Description: "DCOS token",
+			},
+			"dcos_path": &schema.Schema{
+				Type:        schema.TypeString,
+				Optional:    true,
+				Default:     "marathon",
+				Description: "DCOS path",
+			},
 			"log_output": &schema.Schema{
 				Type:        schema.TypeBool,
 				Optional:    true,
@@ -69,6 +81,8 @@ func providerConfigure(d *schema.ResourceData) (interface{}, error) {
 	}
 	marathonConfig.HTTPBasicAuthUser = d.Get("basic_auth_user").(string)
 	marathonConfig.HTTPBasicPassword = d.Get("basic_auth_password").(string)
+	marathonConfig.DCOSToken = d.Get("dcos_token").(string)
+	marathonConfig.DCOSPath = d.Get("dcos_path").(string)
 	if d.Get("log_output").(bool) {
 		marathonConfig.LogOutput = logWriter{}
 	}

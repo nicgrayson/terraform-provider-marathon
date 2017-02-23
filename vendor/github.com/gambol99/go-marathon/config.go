@@ -46,6 +46,8 @@ type Config struct {
 	CallbackURL string
 	// DCOSToken for DCOS environment, This will override the Authorization header
 	DCOSToken string
+	// DCOSPath for additional marathon instances or custom paths
+	DCOSPath string
 	// LogOutput the output for debug log messages
 	LogOutput io.Writer
 	// HTTPClient is the http client
