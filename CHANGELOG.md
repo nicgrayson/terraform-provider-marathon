@@ -1,3 +1,8 @@
+## 1.2.0 (Unreleased)
+
+- Upgrade terraform to 0.8.7
+- Support DCOS tokens
+
 ## 1.1.0
 
 - Added support for `networkName` to be specified for a task. [Docs](https://mesosphere.github.io/marathon/docs/ip-per-task.html)
