@@ -20,6 +20,7 @@ else
 endif
 
 test: install
+	docker pull python:3
 	docker-compose -f $(docker_compose_file) up -d
 	sleep 10
 	TF_LOG=TRACE TF_LOG_PATH=./test-sh-tf.log TF_ACC=yes MARATHON_URL=http://dev.banno.com:8080 go test ./marathon -v

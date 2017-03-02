@@ -1097,11 +1097,17 @@ func mutateResourceToApplication(d *schema.ResourceData) *marathon.Application {
 	upgradeStrategy := &marathon.UpgradeStrategy{}
 
 	if v, ok := d.GetOk("upgrade_strategy.0.minimum_health_capacity"); ok {
-		upgradeStrategy.MinimumHealthCapacity = v.(*float64)
+		f, ok := v.(*float64)
+		if ok {
+			upgradeStrategy.MinimumHealthCapacity = f
+		}
 	}
 
 	if v, ok := d.GetOk("upgrade_strategy.0.maximum_over_capacity"); ok {
-		upgradeStrategy.MaximumOverCapacity = v.(*float64)
+		f, ok := v.(*float64)
+		if ok {
+			upgradeStrategy.MaximumOverCapacity = f
+		}
 	}
 
 	application.UpgradeStrategy = upgradeStrategy
