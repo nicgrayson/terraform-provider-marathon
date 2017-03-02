@@ -858,7 +858,7 @@ func mutateResourceToApplication(d *schema.ResourceData) *marathon.Application {
 		discovery = discovery.EmptyPorts()
 
 		ipAddressPerTask := new(marathon.IPAddressPerTask)
-		ipAddressPerTask.Discovery = *discovery
+		ipAddressPerTask.Discovery = discovery
 
 		ipAddressPerTask.NetworkName = t
 
@@ -1097,11 +1097,11 @@ func mutateResourceToApplication(d *schema.ResourceData) *marathon.Application {
 	upgradeStrategy := &marathon.UpgradeStrategy{}
 
 	if v, ok := d.GetOk("upgrade_strategy.0.minimum_health_capacity"); ok {
-		upgradeStrategy.MinimumHealthCapacity = v.(float64)
+		upgradeStrategy.MinimumHealthCapacity = v.(*float64)
 	}
 
 	if v, ok := d.GetOk("upgrade_strategy.0.maximum_over_capacity"); ok {
-		upgradeStrategy.MaximumOverCapacity = v.(float64)
+		upgradeStrategy.MaximumOverCapacity = v.(*float64)
 	}
 
 	application.UpgradeStrategy = upgradeStrategy
