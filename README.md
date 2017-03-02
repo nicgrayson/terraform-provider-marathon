@@ -42,6 +42,25 @@ provider "marathon" {
 }
 ```
 
+To use Marathon from a DCOS cluster you need to get a [token](https://dcos.io/docs/1.8/administration/id-and-access-mgt/iam-api/) and include the [framework path](https://docs.mesosphere.com/1.8/usage/service-guides/marathon/install) in the Marathon URL:
+
+```bash
+export TF_VAR_marathon_url="http://dcos.domain.tld/service/marathon"
+export TF_VAR_dcos_token="<authentication-token>"
+```
+
+```hcl
+variable "marathon_url" {}
+variable "dcos_token" {}
+
+provider "marathon" {
+  url        = "${var.marathon_url}"
+  dcos_token = "${var.dcos_token}"
+}
+```
+
+If you have an additional Marathon instance called *marathon-alice* set *marathon_url* to `http://dcos.domain.tld/service/marathon-alice`. Refer to the *go-marathon* [documentation](https://github.com/gambol99/go-marathon/blob/master/README.md#creating-a-client) to get details about custom paths in Marathon URLs.
+
 ### Basic Usage
 ```hcl
 resource "marathon_app" "hello-world" {
