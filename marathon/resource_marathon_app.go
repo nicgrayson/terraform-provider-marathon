@@ -321,10 +321,10 @@ func resourceMarathonApp() *schema.Resource {
 										Default:  20,
 										Optional: true,
 									},
-									// "ignore_http_1xx": &schema.Schema{
-									// 	Type:     schema.TypeBool,
-									// 	Optional: true,
-									// },
+									"ignore_http_1xx": &schema.Schema{
+										Type:     schema.TypeBool,
+										Optional: true,
+									},
 									"max_consecutive_failures": &schema.Schema{
 										Type:     schema.TypeInt,
 										Default:  3,
@@ -670,6 +670,7 @@ func setSchemaFieldsForApp(app *marathon.Application, d *schema.ResourceData) {
 				hMap["command"] = []interface{}{map[string]string{"value": healthCheck.Command.Value}}
 			}
 			hMap["grace_period_seconds"] = healthCheck.GracePeriodSeconds
+			hMap["ignore_http_1xx"] = healthCheck.IgnoreHTTP1xx
 			hMap["interval_seconds"] = healthCheck.IntervalSeconds
 			hMap["max_consecutive_failures"] = healthCheck.MaxConsecutiveFailures
 			hMap["path"] = healthCheck.Path
@@ -1048,6 +1049,11 @@ func mutateResourceToApplication(d *schema.ResourceData) *marathon.Application {
 
 			if prop, ok := mapStruct["interval_seconds"]; ok {
 				healthCheck.IntervalSeconds = prop.(int)
+			}
+
+			if prop, ok := mapStruct["ignore_http_1xx"]; ok {
+				prop := prop.(bool)
+				healthCheck.IgnoreHTTP1xx = &prop
 			}
 
 			if prop, ok := mapStruct["max_consecutive_failures"]; ok {

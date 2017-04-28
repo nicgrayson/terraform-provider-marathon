@@ -149,8 +149,8 @@
 		},
 		{
 			"ImportPath": "github.com/gambol99/go-marathon",
-			"Comment": "v0.7.1-1-gced6005",
-			"Rev": "ced60055f074477c61ef886423f317acfd8fbf4a"
+			"Comment": "v0.7.1-4-gcf63187",
+			"Rev": "cf631873b8c2d4cd3a348a65129951bfc00d9b82"
 		},
 		{
 			"ImportPath": "github.com/go-ini/ini",
