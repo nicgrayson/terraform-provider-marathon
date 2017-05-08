@@ -8,7 +8,7 @@ import (
 	"regexp"
 	"time"
 
-	"github.com/gambol99/go-marathon"
+	"github.com/ContainerLabs/go-marathon"
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/helper/schema"
 	"github.com/hashicorp/terraform/terraform"
@@ -97,8 +97,8 @@ func TestAccMarathonApp_basic(t *testing.T) {
 
 func TestAccMarathonApp_ipAddress(t *testing.T) {
 	resource.Test(t, resource.TestCase{
-		PreCheck:     func() { testAccPreCheck(t) },
-		Providers:    testAccProviders,
+		PreCheck:  func() { testAccPreCheck(t) },
+		Providers: testAccProviders,
 		Steps: []resource.TestStep{
 			resource.TestStep{
 				Config: readExampleAppConfiguration("ip-address"),

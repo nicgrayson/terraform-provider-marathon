@@ -1,8 +1,9 @@
 package marathon
 
 import (
-	"github.com/gambol99/go-marathon"
 	"time"
+
+	"github.com/ContainerLabs/go-marathon"
 )
 
 type config struct {

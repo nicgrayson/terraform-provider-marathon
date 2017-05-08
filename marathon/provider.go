@@ -5,7 +5,7 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/gambol99/go-marathon"
+	"github.com/ContainerLabs/go-marathon"
 	"github.com/hashicorp/terraform/helper/schema"
 	"github.com/hashicorp/terraform/terraform"
 )

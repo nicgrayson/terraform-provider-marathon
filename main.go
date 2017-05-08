@@ -1,7 +1,7 @@
 package main
 
 import (
-	"github.com/Banno/terraform-provider-marathon/marathon"
+	"github.com/ContainerLabs/terraform-provider-marathon/marathon"
 	"github.com/hashicorp/terraform/plugin"
 )
 
