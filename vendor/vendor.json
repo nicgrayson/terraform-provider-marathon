@@ -1,0 +1,43 @@
+{
+	"comment": "",
+	"ignore": "",
+	"package": [
+		{
+			"checksumSHA1": "I09hbJiJwZse1W7ndxiM+BN+qo4=",
+			"path": "github.com/gambol99/go-marathon",
+			"revision": "37fb361197f7a05f9ac0a8ca6e52ac9222ed4e4d",
+			"revisionTime": "2017-05-09T08:37:24Z"
+		},
+		{
+			"checksumSHA1": "RZOdTSZN/PgcTqko5LzIAzw+UT4=",
+			"path": "github.com/pmezard/go-difflib/difflib",
+			"revision": "792786c7400a136282c1664665ae0a8db921c6c2",
+			"revisionTime": "2016-01-10T10:55:54Z"
+		},
+		{
+			"checksumSHA1": "8rxOh1Vlti1bzoIy6mH5eL0RYsI=",
+			"path": "github.com/stretchr/testify/assert",
+			"revision": "4d4bfba8f1d1027c4fdbe371823030df51419987",
+			"revisionTime": "2017-01-30T11:31:45Z"
+		},
+		{
+			"checksumSHA1": "6kF7mPXIAVaHHZu4qaljLMgeF80=",
+			"path": "github.com/stretchr/testify/require",
+			"revision": "4d4bfba8f1d1027c4fdbe371823030df51419987",
+			"revisionTime": "2017-01-30T11:31:45Z"
+		},
+		{
+			"checksumSHA1": "538I8ghUdvZa25NxgMUDpq14Qic=",
+			"path": "gopkg.in/check.v1",
+			"revision": "20d25e2804050c1cd24a7eea1e7a6447dd0e74ec",
+			"revisionTime": "2016-12-08T18:13:25Z"
+		},
+		{
+			"checksumSHA1": "QX69hdf0wsAInBxC21QNkmXXD4o=",
+			"path": "gopkg.in/yaml.v2",
+			"revision": "cd8b52f8269e0feb286dfeef29f8fe4d5b397e0b",
+			"revisionTime": "2017-04-07T17:21:22Z"
+		}
+	],
+	"rootPath": "github.com/ContainerLabs/terraform-provider-marathon"
+}

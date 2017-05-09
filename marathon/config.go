@@ -3,7 +3,7 @@ package marathon
 import (
 	"time"
 
-	"github.com/ContainerLabs/go-marathon"
+	"github.com/gambol99/go-marathon"
 )
 
 type config struct {

@@ -8,7 +8,7 @@ import (
 	"regexp"
 	"time"
 
-	"github.com/ContainerLabs/go-marathon"
+	"github.com/gambol99/go-marathon"
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/helper/schema"
 	"github.com/hashicorp/terraform/terraform"

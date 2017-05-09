@@ -8,7 +8,7 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/ContainerLabs/go-marathon"
+	"github.com/gambol99/go-marathon"
 	"github.com/hashicorp/terraform/helper/schema"
 )
 
