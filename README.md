@@ -1,5 +1,7 @@
 # Marathon Terraform Provider
 
+[![Build Status](https://travis-ci.org/nicgrayson/terraform-provider-marathon.svg?branch=master)](https://travis-ci.org/nicgrayson/terraform-provider-marathon)
+
 ## Install
 ```
 $ go get github.com/nicgrayson/terraform-provider-marathon
