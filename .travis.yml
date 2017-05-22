@@ -1,11 +1,17 @@
 language: go
+sudo: required
+services:
+  - docker
 go:
 - 1.8.1
 
 go_import_path: github.com/nicgrayson/terraform-provider-marathon
 
+env:
+  DOCKER_COMPOSE_VERSION: 1.4.2
+
 before_install:
   - go get github.com/tools/godep
   - make get-deps
 
-install: make install
+install: make test
