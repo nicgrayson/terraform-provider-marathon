@@ -14,8 +14,8 @@ fi
 version=$(cat version)
 
 # Create the release
-github-release release -u banno -r terraform-provider-marathon -t "$version"
+github-release release -u nicgrayson -r terraform-provider-marathon -t "$version"
 
 # Upload the binaries
-github-release upload -u banno -r terraform-provider-marathon -f bin/terraform-provider-marathon-linux -t "$version" --name terraform-provider-marathon-linux
-github-release upload -u banno -r terraform-provider-marathon -f bin/terraform-provider-marathon-osx -t "$version" --name terraform-provider-marathon-osx
+github-release upload -u nicgrayson -r terraform-provider-marathon -f bin/terraform-provider-marathon-linux -t "$version" --name terraform-provider-marathon-linux
+github-release upload -u nicgrayson -r terraform-provider-marathon -f bin/terraform-provider-marathon-osx -t "$version" --name terraform-provider-marathon-osx
