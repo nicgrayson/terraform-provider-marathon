@@ -1,4 +1,4 @@
-.PHONY: vet linux osx build test release
+.PHONY: vet linux osx install test release
 
 vet:
 	go tool vet *.go marathon/*.go
