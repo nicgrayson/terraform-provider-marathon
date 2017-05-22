@@ -1,14 +1,9 @@
 resource "marathon_app" "ip-address-create-example" {
   app_id = "/app-create-example"
-
   cmd = "env && python3 -m http.server 8080"
-
-  constraints {
-    constraint {
-      attribute = "hostname"
-      operation = "UNIQUE"
-    }
-  }
+  cpus = 0.01
+  instances = 1
+  mem = 50
 
   container {
     docker {
@@ -48,45 +43,30 @@ resource "marathon_app" "ip-address-create-example" {
     }
   }
 
-  cpus = "0.01"
-
   env {
     TEST = "hey"
     OTHER_TEST = "nope"
   }
 
   health_checks {
-    health_check {
-      grace_period_seconds = 3
-      interval_seconds = 10
-      max_consecutive_failures = 0
-      path = "/"
-      port_index = 0
-      protocol = "HTTP"
-      timeout_seconds = 5
-    }
-    health_check {
-      command {
-        value = "curl -f -X GET http://$HOST:$PORT0/"
-      }
-      max_consecutive_failures = 0
-      protocol = "COMMAND"
-    }
-  }
-
-  instances = 1
-  labels {
-    test = "abc"
-  }
-  mem = 50
-
-  upgrade_strategy {
-    minimum_health_capacity = "0.5"
+     health_check {
+       command {
+         value = "ps aux |grep python"
+       }
+       max_consecutive_failures = 0
+       protocol = "COMMAND"
+     }
   }
 
   ipaddress {
     network_name = "default"
   }
 
-  # dependencies = ["/test"]
+  labels {
+    test = "abc"
+  }
+
+  upgrade_strategy {
+    minimum_health_capacity = "0.5"
+  }
 }

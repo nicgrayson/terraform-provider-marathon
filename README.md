@@ -2,7 +2,7 @@
 
 ## Install
 ```
-$ go get github.com/Banno/terraform-provider-marathon
+$ go get github.com/nicgrayson/terraform-provider-marathon
 ```
 
 ## Usage

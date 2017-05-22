@@ -1,92 +1,85 @@
-dns:
-  image: registry.banno-internal.com/big-dns:latest
-  ports:
-    - '53:53'
-    - 53:53/udp
-  environment:
-    DEV_BANNO_IP: 192.168.99.100
-    LOCAL_BANNO_IP: 192.168.99.1
-
 zookeeper:
-  image: registry.banno-internal.com/zookeeper:3.4.8
+  image: zookeeper:3.4.9
+  hostname: zookeeper
   ports:
-    - 2181:2181
-  dns:
-    - dns
-
-marathon:
-  image: mesosphere/marathon:v1.3.3
-  ports:
-    - 8080:8080
-  command: "--master zk://zookeeper:2181/mesos --zk zk://zookeeper:2181/marathon"
-  environment:
-    MARATHON_MESOS_ROLE: marathon
-  links:
-    - dns
-    - zookeeper
-    - mesos-master
-    - mesos-agent1
-    - mesos-agent2
-  dns:
-    - dns
-    - 172.17.0.1
+    - "2181:2181"
 
 mesos-master:
-  image: registry.banno-internal.com/mesos-master:1.0
+  image: mesosphere/mesos-master:1.1.0-2.0.107.ubuntu1404
+  hostname: mesos-master
+  entrypoint: [ "mesos-master" ]
   ports:
-    - 5050:5050
-  environment:
-    MESOS_ZK: zk://zookeeper:2181/mesos
-    MESOS_LOG_DIR: "/var/log"
-    MESOS_WORK_DIR: "/mesos"
-    MESOS_QUORUM: 1
-    MESOS_CLUSTER: dev.banno.com
+    - "5050:5050"
   links:
-    - dns
     - zookeeper
-  dns:
-    - dns
+  environment:
+    - MESOS_CLUSTER=local
+    - MESOS_HOSTNAME=mesos-master.docker
+    - MESOS_LOG_DIR=/var/log
+    - MESOS_QUORUM=1
+    - MESOS_WORK_DIR=/var/lib/mesos
+    - MESOS_ROLES=public
+    - MESOS_ZK=zk://zookeeper:2181/mesos
 
-mesos-agent1:
-  image: registry.banno-internal.com/mesos-agent:1.0
-  command: mesos-agent --resources=cpus:4;mem:24576;disk:409600
+mesos-slave1:
+  image: mesosphere/mesos-slave:1.1.0-2.0.107.ubuntu1404
+  entrypoint:
+    - mesos-slave
+  privileged: true
+  hostname: mesos-agent1
   ports:
-    - 5151:5151
-  environment:
-    MESOS_CONTAINERIZERS: docker,mesos
-    MESOS_DOCKER_STOP_TIMEOUT: 30secs
-    MESOS_LOG_DIR: "/var/log"
-    MESOS_MASTER: zk://zookeeper:2181/mesos
-    MESOS_WORK_DIR: "/mesos"
-    MESOS_PORT: '5151'
-    MESOS_HOSTNAME: dev.banno.com
-  volumes:
-    - "/sys:/sys"
-    - "/var/run/docker.sock:/var/run/docker.sock"
+    - "5051:5051"
   links:
-    - dns
     - zookeeper
-  dns:
-    - dns
+    - mesos-master
+  environment:
+    - MESOS_CONTAINERIZERS=docker,mesos
+    - MESOS_HOSTNAME=localhost
+    - MESOS_MASTER=zk://zookeeper:2181/mesos
+    - MESOS_PORT=5051
+    - MESOS_WORK_DIR=/var/lib/mesos
+    - MESOS_EXECUTOR_REGISTRATION_TIMEOUT=5mins
+    - MESOS_EXECUTOR_SHUTDOWN_GRACE_PERIOD=90secs
+    - MESOS_DOCKER_STOP_TIMEOUT=60secs
+    - MESOS_RESOURCES=cpus:4;mem:1280;disk:25600;ports(*):[12000-12999]
+  volumes:
+    - "/sys:/sys/fs/cgroup"
+    - "/var/run/docker.sock:/var/run/docker.sock"
 
-mesos-agent2:
-  image: registry.banno-internal.com/mesos-agent:1.0
-  command: mesos-agent --resources=ports:[41000-42000];cpus:4;mem:24576;disk:409600
+mesos-slave2:
+  image: mesosphere/mesos-slave:1.1.0-2.0.107.ubuntu1404
+  entrypoint:
+    - mesos-slave
+  privileged: true
+  hostname: mesos-agent2
   ports:
-    - 5152:5152
-  environment:
-    MESOS_CONTAINERIZERS: docker,mesos
-    MESOS_DOCKER_STOP_TIMEOUT: 30secs
-    MESOS_LOG_DIR: "/var/log"
-    MESOS_MASTER: zk://zookeeper:2181/mesos
-    MESOS_WORK_DIR: "/mesos"
-    MESOS_PORT: '5152'
-    MESOS_HOSTNAME: dev.banno.com
-  volumes:
-    - "/sys:/sys"
-    - "/var/run/docker.sock:/var/run/docker.sock"
+    - "5052:5052"
   links:
-    - dns
     - zookeeper
-  dns:
-    - dns
+    - mesos-master
+  environment:
+    - MESOS_CONTAINERIZERS=docker,mesos
+    - MESOS_MASTER=zk://zookeeper:2181/mesos
+    - MESOS_PORT=5052
+    - MESOS_WORK_DIR=/var/lib/mesos
+    - MESOS_EXECUTOR_REGISTRATION_TIMEOUT=5mins
+    - MESOS_EXECUTOR_SHUTDOWN_GRACE_PERIOD=90secs
+    - MESOS_DOCKER_STOP_TIMEOUT=60secs
+    - MESOS_RESOURCES=cpus:4;mem:1280;disk:25600;ports(*):[13000-13999]
+  volumes:
+    - "/sys:/sys/fs/cgroup"
+    - "/var/run/docker.sock:/var/run/docker.sock"
+
+marathon:
+  image: mesosphere/marathon:v1.4.3
+  ports:
+    - "8080:8080"
+  links:
+    - zookeeper
+    - mesos-master
+  environment:
+    - MARATHON_ZK=zk://zookeeper:2181/marathon
+    - MARATHON_MASTER=zk://zookeeper:2181/mesos
+    - MARATHON_DECLINE_OFFER_DURATION=3600000
+    - MARATHON_MESOS_AUTHENTICATION_PRINCIPAL=marathon
+    - MARATHON_MESOS_ROLE=public
