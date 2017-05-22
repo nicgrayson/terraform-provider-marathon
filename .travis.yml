@@ -4,6 +4,8 @@ go:
 
 go_import_path: github.com/nicgrayson/terraform-provider-marathon
 
-before_install: make get-deps
+before_install:
+  - go get github.com/tools/godep
+  - make get-deps
 
 install: make install
