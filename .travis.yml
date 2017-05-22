@@ -1,9 +1,9 @@
-dist: trusty
-sudo: false
 language: go
 go:
 - 1.8.1
 
 go_import_path: github.com/nicgrayson/terraform-provider-marathon
+
+before_install: make get-deps
 
 install: make install

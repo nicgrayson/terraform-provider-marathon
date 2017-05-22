@@ -1,4 +1,7 @@
-.PHONY: vet linux osx install test release
+.PHONY: vet linux osx install test release get-deps
+
+get-deps:
+	godep get
 
 vet:
 	go tool vet *.go marathon/*.go
