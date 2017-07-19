@@ -242,6 +242,18 @@ func resourceMarathonApp() *schema.Resource {
 				Default:  0.1,
 				ForceNew: false,
 			},
+			"gpus": &schema.Schema{
+				Type:     schema.TypeFloat,
+				Optional: true,
+				Default:  0,
+				ForceNew: false,
+			},
+			"disk": &schema.Schema{
+				Type:     schema.TypeFloat,
+				Optional: true,
+				Default:  0,
+				ForceNew: false,
+			},
 			"dependencies": &schema.Schema{
 				Type:     schema.TypeList,
 				Optional: true,
@@ -369,6 +381,12 @@ func resourceMarathonApp() *schema.Resource {
 				Type:     schema.TypeFloat,
 				Optional: true,
 				Default:  128,
+				ForceNew: false,
+			},
+			"max_launch_delay_seconds": &schema.Schema{
+				Type:     schema.TypeFloat,
+				Optional: true,
+				Default:  3600,
 				ForceNew: false,
 			},
 			"ports": &schema.Schema{
@@ -666,6 +684,12 @@ func setSchemaFieldsForApp(app *marathon.Application, d *schema.ResourceData) {
 	d.Set("cpus", app.CPUs)
 	d.SetPartial("cpus")
 
+	d.Set("gpus", app.GPUs)
+	d.SetPartial("gpus")
+
+	d.Set("disk", app.Disk)
+	d.SetPartial("disk")
+
 	d.Set("dependencies", &app.Dependencies)
 	d.SetPartial("dependencies")
 
@@ -725,6 +749,9 @@ func setSchemaFieldsForApp(app *marathon.Application, d *schema.ResourceData) {
 	d.Set("mem", app.Mem)
 	d.SetPartial("mem")
 
+	d.Set("max_launch_delay_seconds", app.MaxLaunchDelaySeconds)
+	d.SetPartial("max_launch_delay_seconds")
+
 	if givenFreePortsDoesNotEqualAllocated(d, app) {
 		d.Set("ports", app.Ports)
 	}
@@ -762,9 +789,6 @@ func setSchemaFieldsForApp(app *marathon.Application, d *schema.ResourceData) {
 	// App
 	d.Set("executor", app.Executor)
 	d.SetPartial("executor")
-
-	d.Set("disk", app.Disk)
-	d.SetPartial("disk")
 
 	d.Set("user", app.User)
 	d.SetPartial("user")
@@ -1007,6 +1031,16 @@ func mutateResourceToApplication(d *schema.ResourceData) *marathon.Application {
 		application.CPUs = v.(float64)
 	}
 
+	if v, ok := d.GetOk("gpus"); ok {
+		value := v.(float64)
+		application.GPUs = &value
+	}
+
+	if v, ok := d.GetOk("disk"); ok {
+		value := v.(float64)
+		application.Disk = &value
+	}
+
 	if v, ok := d.GetOk("dependencies.#"); ok {
 		dependencies := make([]string, v.(int))
 
@@ -1140,6 +1174,11 @@ func mutateResourceToApplication(d *schema.ResourceData) *marathon.Application {
 	if v, ok := d.GetOk("mem"); ok {
 		v := v.(float64)
 		application.Mem = &v
+	}
+
+	if v, ok := d.GetOk("max_launch_delay_seconds"); ok {
+		v := v.(float64)
+		application.MaxLaunchDelaySeconds = &v
 	}
 
 	if v, ok := d.GetOk("require_ports"); ok {

@@ -1,5 +1,6 @@
 ## 1.3.0 (unreleased)
 
+- Added support for `disk`, `gpus`, `max_launch_delay_seconds` and `port_definitions` configuration
 - Added support for `unreachable_strategy` configuration
 - Added support for `kill_selection` configuration
 - Fixed `upgrade_strategy` configuration not being evaluated
