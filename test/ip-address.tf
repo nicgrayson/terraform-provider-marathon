@@ -20,6 +20,9 @@ resource "marathon_app" "ip-address-create-example" {
           container_port = 8080
           host_port = 0
           protocol = "tcp"
+          labels {
+            VIP_0 = "test:8080"
+          }
         }
         port_mapping {
           container_port = 161
@@ -62,11 +65,19 @@ resource "marathon_app" "ip-address-create-example" {
     network_name = "default"
   }
 
+  kill_selection = "OLDEST_FIRST"
+
   labels {
     test = "abc"
   }
 
   upgrade_strategy {
-    minimum_health_capacity = "0.5"
+    minimum_health_capacity = 0.5
+    maximum_over_capacity = 0.3
+  }
+
+  unreachable_strategy {
+    inactive_after_seconds = 60
+    expunge_after_seconds = 120
   }
 }

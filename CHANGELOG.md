@@ -1,6 +1,12 @@
-## 1.2.0 (Unreleased)
+## 1.3.0 (unreleased)
 
-- Upgrade terraform to 0.8.7
+- Added support for `unreachable_strategy` configuration
+- Added support for `kill_selection` configuration
+- Fixed `upgrade_strategy` configuration not being evaluated
+
+## 1.2.0
+
+- Upgrade terraform to 0.9.1
 - Support DCOS tokens
 
 ## 1.1.0

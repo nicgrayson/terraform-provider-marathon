@@ -185,6 +185,10 @@ func resourceMarathonApp() *schema.Resource {
 																Default:  "tcp",
 																Optional: true,
 															},
+															"labels": &schema.Schema{
+																Type:     schema.TypeMap,
+																Optional: true,
+															},
 														},
 													},
 												},
@@ -400,6 +404,31 @@ func resourceMarathonApp() *schema.Resource {
 					},
 				},
 			},
+			"unreachable_strategy": &schema.Schema{
+				Type:     schema.TypeList,
+				Optional: true,
+				ForceNew: false,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"inactive_after_seconds": &schema.Schema{
+							Type:     schema.TypeFloat,
+							Optional: true,
+							Default:  300.0,
+						},
+						"expunge_after_seconds": &schema.Schema{
+							Type:     schema.TypeFloat,
+							Optional: true,
+							Default:  600.0,
+						},
+					},
+				},
+			},
+			"kill_selection": &schema.Schema{
+				Type:     schema.TypeString,
+				Optional: true,
+				Default:  "YOUNGEST_FIRST",
+				ForceNew: false,
+			},
 			"uris": &schema.Schema{
 				Type:     schema.TypeList,
 				Optional: true,
@@ -606,6 +635,7 @@ func setSchemaFieldsForApp(app *marathon.Application, d *schema.ResourceData) {
 					pmMap["host_port"] = portMapping.HostPort
 					// pmMap["service_port"] = portMapping.ServicePort
 					pmMap["protocol"] = portMapping.Protocol
+					pmMap["labels"] = portMapping.Labels
 					portMappings[idx] = pmMap
 				}
 				dockerMap["port_mappings"] = []interface{}{map[string]interface{}{"port_mapping": portMappings}}
@@ -712,6 +742,19 @@ func setSchemaFieldsForApp(app *marathon.Application, d *schema.ResourceData) {
 		d.Set("upgrade_strategy", nil)
 	}
 	d.SetPartial("upgrade_strategy")
+
+	if app.UnreachableStrategy != nil {
+		unrMap := make(map[string]interface{})
+		unrMap["inactive_after_seconds"] = app.UnreachableStrategy.InactiveAfterSeconds
+		unrMap["expunge_after_seconds"] = app.UnreachableStrategy.ExpungeAfterSeconds
+		d.Set("unreachable_strategy", &[]interface{}{unrMap})
+	} else {
+		d.Set("unreachable_strategy", nil)
+	}
+	d.SetPartial("unreachable_strategy")
+
+	d.Set("kill_selection", app.KillSelection)
+	d.SetPartial("kill_selection")
 
 	d.Set("uris", app.Uris)
 	d.SetPartial("uris")
@@ -922,6 +965,12 @@ func mutateResourceToApplication(d *schema.ResourceData) *marathon.Application {
 						portMappings[i].ServicePort = val.(int)
 					}
 
+					labelsMap := d.Get(fmt.Sprintf("container.0.docker.0.port_mappings.0.port_mapping.%d.labels", i)).(map[string]interface{})
+					labels := make(map[string]string, len(labelsMap))
+					for key, value := range labelsMap {
+						labels[key] = value.(string)
+					}
+					portMappings[i].Labels = &labels
 				}
 				docker.PortMappings = &portMappings
 			}
@@ -1100,23 +1149,45 @@ func mutateResourceToApplication(d *schema.ResourceData) *marathon.Application {
 
 	application.Ports = getPorts(d)
 
-	upgradeStrategy := &marathon.UpgradeStrategy{}
+	upgradeStrategy := marathon.UpgradeStrategy{}
 
 	if v, ok := d.GetOk("upgrade_strategy.0.minimum_health_capacity"); ok {
-		f, ok := v.(*float64)
+		f, ok := v.(float64)
 		if ok {
-			upgradeStrategy.MinimumHealthCapacity = f
+			upgradeStrategy.MinimumHealthCapacity = &f
 		}
 	}
 
 	if v, ok := d.GetOk("upgrade_strategy.0.maximum_over_capacity"); ok {
-		f, ok := v.(*float64)
+		f, ok := v.(float64)
 		if ok {
-			upgradeStrategy.MaximumOverCapacity = f
+			upgradeStrategy.MaximumOverCapacity = &f
 		}
 	}
 
-	application.UpgradeStrategy = upgradeStrategy
+	application.SetUpgradeStrategy(upgradeStrategy)
+
+	unreachableStrategy := marathon.UnreachableStrategy{}
+	if v, ok := d.GetOk("unreachable_strategy.0.inactive_after_seconds"); ok {
+		f, ok := v.(float64)
+		if ok {
+			unreachableStrategy.InactiveAfterSeconds = &f
+		}
+	}
+
+	if v, ok := d.GetOk("unreachable_strategy.0.expunge_after_seconds"); ok {
+		f, ok := v.(float64)
+		if ok {
+			unreachableStrategy.ExpungeAfterSeconds = &f
+		}
+	}
+
+	application.SetUnreachableStrategy(unreachableStrategy)
+
+	if v, ok := d.GetOk("kill_selection"); ok {
+		v := v.(string)
+		application.KillSelection = v
+	}
 
 	if v, ok := d.GetOk("uris.#"); ok {
 		uris := make([]string, v.(int))

@@ -97,8 +97,8 @@ func TestAccMarathonApp_basic(t *testing.T) {
 
 func TestAccMarathonApp_ipAddress(t *testing.T) {
 	resource.Test(t, resource.TestCase{
-		PreCheck:     func() { testAccPreCheck(t) },
-		Providers:    testAccProviders,
+		PreCheck:  func() { testAccPreCheck(t) },
+		Providers: testAccProviders,
 		Steps: []resource.TestStep{
 			resource.TestStep{
 				Config: readExampleAppConfiguration("ip-address"),
