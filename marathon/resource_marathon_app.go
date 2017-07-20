@@ -185,6 +185,10 @@ func resourceMarathonApp() *schema.Resource {
 																Default:  "tcp",
 																Optional: true,
 															},
+															"labels": &schema.Schema{
+																Type:     schema.TypeMap,
+																Optional: true,
+															},
 														},
 													},
 												},
@@ -631,6 +635,7 @@ func setSchemaFieldsForApp(app *marathon.Application, d *schema.ResourceData) {
 					pmMap["host_port"] = portMapping.HostPort
 					// pmMap["service_port"] = portMapping.ServicePort
 					pmMap["protocol"] = portMapping.Protocol
+					pmMap["labels"] = portMapping.Labels
 					portMappings[idx] = pmMap
 				}
 				dockerMap["port_mappings"] = []interface{}{map[string]interface{}{"port_mapping": portMappings}}
@@ -960,6 +965,12 @@ func mutateResourceToApplication(d *schema.ResourceData) *marathon.Application {
 						portMappings[i].ServicePort = val.(int)
 					}
 
+					labelsMap := d.Get(fmt.Sprintf("container.0.docker.0.port_mappings.0.port_mapping.%d.labels", i)).(map[string]interface{})
+					labels := make(map[string]string, len(labelsMap))
+					for key, value := range labelsMap {
+						labels[key] = value.(string)
+					}
+					portMappings[i].Labels = &labels
 				}
 				docker.PortMappings = &portMappings
 			}

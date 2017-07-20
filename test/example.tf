@@ -21,6 +21,9 @@ resource "marathon_app" "app-create-example" {
           container_port = 8080
           host_port = 0
           protocol = "tcp"
+          labels {
+            VIP_0 = "test:8080"
+          }
         }
         port_mapping {
           container_port = 161
