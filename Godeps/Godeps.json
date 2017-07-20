@@ -1,5 +1,5 @@
 {
-	"ImportPath": "github.com/Banno/terraform-provider-marathon",
+	"ImportPath": "github.com/nicgrayson/terraform-provider-marathon",
 	"GoVersion": "go1.7",
 	"GodepVersion": "v79",
 	"Packages": [
