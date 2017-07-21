@@ -1237,7 +1237,8 @@ func mutateResourceToApplication(d *schema.ResourceData) *marathon.Application {
 			mapStruct := d.Get("port_definitions.0.port_definition." + strconv.Itoa(i)).(map[string]interface{})
 
 			if prop, ok := mapStruct["port"]; ok {
-				portDefinition.Port = prop.(*int)
+				prop := prop.(int)
+				portDefinition.Port = &prop
 			}
 
 			if prop, ok := mapStruct["protocol"]; ok {

@@ -9,17 +9,6 @@ resource "marathon_app" "app-create-example" {
   max_launch_delay_seconds = 3000
   ports = [0, 0]
 
-  port_definitions {
-    port_definition {
-      port = 80
-      protocol = "tcp"
-    }
-    port_definition {
-      port = 443
-      protocol = "tcp"
-    }
-  }
-
   container {
     docker {
       image = "python:3"
