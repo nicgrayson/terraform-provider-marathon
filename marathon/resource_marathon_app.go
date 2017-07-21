@@ -403,6 +403,34 @@ func resourceMarathonApp() *schema.Resource {
 				Default:  false,
 				ForceNew: false,
 			},
+			"port_definitions": &schema.Schema{
+				Type:     schema.TypeList,
+				Optional: true,
+				ForceNew: false,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"port_definition": &schema.Schema{
+							Type:     schema.TypeList,
+							Optional: true,
+							ForceNew: false,
+							Elem: &schema.Resource{
+								Schema: map[string]*schema.Schema{
+									"protocol": &schema.Schema{
+										Type:     schema.TypeString,
+										Default:  "tcp",
+										Optional: true,
+									},
+									"port": &schema.Schema{
+										Type:     schema.TypeInt,
+										Default:  "tcp",
+										Optional: true,
+									},
+								},
+							},
+						},
+					},
+				},
+			},
 			"upgrade_strategy": &schema.Schema{
 				Type:     schema.TypeList,
 				Optional: true,
@@ -759,6 +787,19 @@ func setSchemaFieldsForApp(app *marathon.Application, d *schema.ResourceData) {
 
 	d.Set("require_ports", app.RequirePorts)
 	d.SetPartial("require_ports")
+
+	if app.PortDefinitions != nil && len(*app.PortDefinitions) > 0 {
+		portDefinitions := make([]map[string]interface{}, len(*app.PortDefinitions))
+		for idx, portDefinition := range *app.PortDefinitions {
+			hMap := make(map[string]interface{})
+			hMap["port"] = portDefinition.Port
+			hMap["protocol"] = portDefinition.Protocol
+			portDefinitions[idx] = hMap
+		}
+		d.Set("port_definitions", &[]interface{}{map[string]interface{}{"port_definition": portDefinitions}})
+	} else {
+		d.Set("port_definitions", nil)
+	}
 
 	if app.UpgradeStrategy != nil {
 		usMap := make(map[string]interface{})
@@ -1187,6 +1228,29 @@ func mutateResourceToApplication(d *schema.ResourceData) *marathon.Application {
 	}
 
 	application.Ports = getPorts(d)
+
+	if v, ok := d.GetOk("port_definitions.0.port_definition.#"); ok {
+		portDefinitions := make([]marathon.PortDefinition, v.(int))
+
+		for i := range portDefinitions {
+			portDefinition := new(marathon.PortDefinition)
+			mapStruct := d.Get("port_definitions.0.port_definition." + strconv.Itoa(i)).(map[string]interface{})
+
+			if prop, ok := mapStruct["port"]; ok {
+				portDefinition.Port = prop.(*int)
+			}
+
+			if prop, ok := mapStruct["protocol"]; ok {
+				portDefinition.Protocol = prop.(string)
+			}
+
+			portDefinitions[i] = *portDefinition
+		}
+
+		application.PortDefinitions = &portDefinitions
+	} else {
+		application.PortDefinitions = nil
+	}
 
 	upgradeStrategy := marathon.UpgradeStrategy{}
 
