@@ -242,6 +242,18 @@ func resourceMarathonApp() *schema.Resource {
 				Default:  0.1,
 				ForceNew: false,
 			},
+			"gpus": &schema.Schema{
+				Type:     schema.TypeFloat,
+				Optional: true,
+				Default:  0,
+				ForceNew: false,
+			},
+			"disk": &schema.Schema{
+				Type:     schema.TypeFloat,
+				Optional: true,
+				Default:  0,
+				ForceNew: false,
+			},
 			"dependencies": &schema.Schema{
 				Type:     schema.TypeList,
 				Optional: true,
@@ -371,6 +383,12 @@ func resourceMarathonApp() *schema.Resource {
 				Default:  128,
 				ForceNew: false,
 			},
+			"max_launch_delay_seconds": &schema.Schema{
+				Type:     schema.TypeFloat,
+				Optional: true,
+				Default:  3600,
+				ForceNew: false,
+			},
 			"ports": &schema.Schema{
 				Type:     schema.TypeList,
 				Optional: true,
@@ -384,6 +402,34 @@ func resourceMarathonApp() *schema.Resource {
 				Optional: true,
 				Default:  false,
 				ForceNew: false,
+			},
+			"port_definitions": &schema.Schema{
+				Type:     schema.TypeList,
+				Optional: true,
+				ForceNew: false,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"port_definition": &schema.Schema{
+							Type:     schema.TypeList,
+							Optional: true,
+							ForceNew: false,
+							Elem: &schema.Resource{
+								Schema: map[string]*schema.Schema{
+									"protocol": &schema.Schema{
+										Type:     schema.TypeString,
+										Default:  "tcp",
+										Optional: true,
+									},
+									"port": &schema.Schema{
+										Type:     schema.TypeInt,
+										Default:  "tcp",
+										Optional: true,
+									},
+								},
+							},
+						},
+					},
+				},
 			},
 			"upgrade_strategy": &schema.Schema{
 				Type:     schema.TypeList,
@@ -666,6 +712,12 @@ func setSchemaFieldsForApp(app *marathon.Application, d *schema.ResourceData) {
 	d.Set("cpus", app.CPUs)
 	d.SetPartial("cpus")
 
+	d.Set("gpus", app.GPUs)
+	d.SetPartial("gpus")
+
+	d.Set("disk", app.Disk)
+	d.SetPartial("disk")
+
 	d.Set("dependencies", &app.Dependencies)
 	d.SetPartial("dependencies")
 
@@ -725,6 +777,9 @@ func setSchemaFieldsForApp(app *marathon.Application, d *schema.ResourceData) {
 	d.Set("mem", app.Mem)
 	d.SetPartial("mem")
 
+	d.Set("max_launch_delay_seconds", app.MaxLaunchDelaySeconds)
+	d.SetPartial("max_launch_delay_seconds")
+
 	if givenFreePortsDoesNotEqualAllocated(d, app) {
 		d.Set("ports", app.Ports)
 	}
@@ -732,6 +787,19 @@ func setSchemaFieldsForApp(app *marathon.Application, d *schema.ResourceData) {
 
 	d.Set("require_ports", app.RequirePorts)
 	d.SetPartial("require_ports")
+
+	if app.PortDefinitions != nil && len(*app.PortDefinitions) > 0 {
+		portDefinitions := make([]map[string]interface{}, len(*app.PortDefinitions))
+		for idx, portDefinition := range *app.PortDefinitions {
+			hMap := make(map[string]interface{})
+			hMap["port"] = portDefinition.Port
+			hMap["protocol"] = portDefinition.Protocol
+			portDefinitions[idx] = hMap
+		}
+		d.Set("port_definitions", &[]interface{}{map[string]interface{}{"port_definition": portDefinitions}})
+	} else {
+		d.Set("port_definitions", nil)
+	}
 
 	if app.UpgradeStrategy != nil {
 		usMap := make(map[string]interface{})
@@ -762,9 +830,6 @@ func setSchemaFieldsForApp(app *marathon.Application, d *schema.ResourceData) {
 	// App
 	d.Set("executor", app.Executor)
 	d.SetPartial("executor")
-
-	d.Set("disk", app.Disk)
-	d.SetPartial("disk")
 
 	d.Set("user", app.User)
 	d.SetPartial("user")
@@ -1007,6 +1072,16 @@ func mutateResourceToApplication(d *schema.ResourceData) *marathon.Application {
 		application.CPUs = v.(float64)
 	}
 
+	if v, ok := d.GetOk("gpus"); ok {
+		value := v.(float64)
+		application.GPUs = &value
+	}
+
+	if v, ok := d.GetOk("disk"); ok {
+		value := v.(float64)
+		application.Disk = &value
+	}
+
 	if v, ok := d.GetOk("dependencies.#"); ok {
 		dependencies := make([]string, v.(int))
 
@@ -1142,12 +1217,41 @@ func mutateResourceToApplication(d *schema.ResourceData) *marathon.Application {
 		application.Mem = &v
 	}
 
+	if v, ok := d.GetOk("max_launch_delay_seconds"); ok {
+		v := v.(float64)
+		application.MaxLaunchDelaySeconds = &v
+	}
+
 	if v, ok := d.GetOk("require_ports"); ok {
 		v := v.(bool)
 		application.RequirePorts = &v
 	}
 
 	application.Ports = getPorts(d)
+
+	if v, ok := d.GetOk("port_definitions.0.port_definition.#"); ok {
+		portDefinitions := make([]marathon.PortDefinition, v.(int))
+
+		for i := range portDefinitions {
+			portDefinition := new(marathon.PortDefinition)
+			mapStruct := d.Get("port_definitions.0.port_definition." + strconv.Itoa(i)).(map[string]interface{})
+
+			if prop, ok := mapStruct["port"]; ok {
+				prop := prop.(int)
+				portDefinition.Port = &prop
+			}
+
+			if prop, ok := mapStruct["protocol"]; ok {
+				portDefinition.Protocol = prop.(string)
+			}
+
+			portDefinitions[i] = *portDefinition
+		}
+
+		application.PortDefinitions = &portDefinitions
+	} else {
+		application.PortDefinitions = nil
+	}
 
 	upgradeStrategy := marathon.UpgradeStrategy{}
 

@@ -2,8 +2,11 @@ resource "marathon_app" "app-create-example" {
   app_id = "/app-create-example"
   cmd = "env && python3 -m http.server 8080"
   cpus = 0.01
+  gpus = 0
+  disk = 0
   instances = 1
   mem = 50
+  max_launch_delay_seconds = 3000
   ports = [0, 0]
 
   container {
